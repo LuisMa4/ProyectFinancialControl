@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./login.css";
 
-export default function LoginPage({ onRegister }) {
+export default function LoginPage({ onRegister, onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -28,7 +28,10 @@ export default function LoginPage({ onRegister }) {
     await new Promise(r => setTimeout(r, 1600));
     setLoading(false);
     setToast("¡Bienvenido! Ingresando al sistema…");
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => {
+      setToast(null);
+      onLoginSuccess();
+    }, 1500);
   };
 
   const handleChange = (field) => (e) => {

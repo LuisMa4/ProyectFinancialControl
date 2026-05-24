@@ -272,7 +272,7 @@ const CustomTip = ({ active, payload, label }) => {
   );
 };
 
-export default function GastosPage() {
+export default function GastosPage({ onLogout, onNavigate }) {
   const [gastos, setGastos]         = useState(GASTOS_INIT);
   const [search, setSearch]         = useState("");
   const [catFilter, setCatFilter]   = useState("todas");
@@ -283,6 +283,11 @@ export default function GastosPage() {
   const [toast, setToast]           = useState(null);
   const [activeNav, setActiveNav]   = useState("gastos");
   const PER_PAGE = 8;
+
+  const handleNavClick = (id) => {
+    setActiveNav(id);
+    if (onNavigate) onNavigate(id);
+  };
 
   // Form state
   const [form, setForm] = useState({ desc: "", monto: "", cat: "alimentacion", fecha: new Date().toISOString().slice(0, 10), nota: "", recurrente: false });
@@ -431,7 +436,7 @@ export default function GastosPage() {
           <nav className="sb-nav">
             {NAV_ITEMS.map(item => (
               <button key={item.id} className={`nav-item${activeNav === item.id ? " active" : ""}`}
-                onClick={() => setActiveNav(item.id)}>
+                onClick={() => handleNavClick(item.id)}>
                 <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{item.icon}</span>
                 {item.label}
               </button>
@@ -444,6 +449,7 @@ export default function GastosPage() {
                 <div className="user-nm">Juan Pérez</div>
                 <div className="user-pl">⭐ Premium</div>
               </div>
+              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
             </div>
           </div>
         </aside>

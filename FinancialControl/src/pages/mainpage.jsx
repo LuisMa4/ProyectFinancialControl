@@ -79,7 +79,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 /* ── MAIN COMPONENT ── */
-export default function Dashboard({ onLogout }) {
+export default function Dashboard({ onLogout, onNavigate }) {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [periodo, setPeriodo]     = useState("Mes");
   const [showAlert, setShowAlert] = useState(true);
@@ -89,6 +89,12 @@ export default function Dashboard({ onLogout }) {
   const presupuesto  = 2500;
   const pctUsado     = Math.round((totalGastos / presupuesto) * 100);
   const saldo        = 3600 - totalGastos;
+
+  const handleNavClick = (id) => {
+    setActiveNav(id);
+    setSidebarOpen(false);
+    if (onNavigate) onNavigate(id);
+  };
 
   return (
     <>
@@ -105,7 +111,7 @@ export default function Dashboard({ onLogout }) {
               <button
                 key={item.id}
                 className={`nav-item${activeNav === item.id ? " active" : ""}`}
-                onClick={() => { setActiveNav(item.id); setSidebarOpen(false); }}
+                onClick={() => handleNavClick(item.id)}
               >
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}

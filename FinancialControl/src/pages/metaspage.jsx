@@ -295,7 +295,7 @@ const MetaRing = ({ pct, color, size = 90 }) => {
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
-export default function MetasPage() {
+export default function MetasPage({ onLogout, onNavigate }) {
   const [metas, setMetas]         = useState(METAS_INIT);
   const [activeNav, setActiveNav] = useState("metas");
   const [viewMode, setViewMode]   = useState("grid"); // grid | list
@@ -314,6 +314,11 @@ export default function MetasPage() {
 
   // Abono
   const [montoAbono, setMontoAbono] = useState("");
+
+  const handleNavClick = (id) => {
+    setActiveNav(id);
+    if (onNavigate) onNavigate(id);
+  };
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -575,7 +580,7 @@ export default function MetasPage() {
           <nav className="sb-nav">
             {NAV_ITEMS.map(item => (
               <button key={item.id} className={`nav-item${activeNav === item.id ? " active" : ""}`}
-                onClick={() => setActiveNav(item.id)}>
+                onClick={() => handleNavClick(item.id)}>
                 <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{item.icon}</span>
                 {item.label}
               </button>
@@ -588,6 +593,7 @@ export default function MetasPage() {
                 <div className="user-nm">Juan Pérez</div>
                 <div className="user-pl">⭐ Premium</div>
               </div>
+              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
             </div>
           </div>
         </aside>
