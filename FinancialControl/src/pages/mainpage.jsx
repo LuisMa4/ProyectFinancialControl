@@ -79,7 +79,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 /* ── MAIN COMPONENT ── */
-export default function Dashboard() {
+export default function Dashboard({ onLogout }) {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [periodo, setPeriodo]     = useState("Mes");
   const [showAlert, setShowAlert] = useState(true);
@@ -92,7 +92,6 @@ export default function Dashboard() {
 
   return (
     <>
-      <style>{styles}</style>
       <div className="app">
         {/* ── SIDEBAR ── */}
         <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
@@ -121,7 +120,7 @@ export default function Dashboard() {
                 <div className="user-name">Juan Pérez</div>
                 <div className="user-plan">⭐ Premium</div>
               </div>
-              <button className="logout-btn" title="Cerrar sesión">⏻</button>
+              <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>
             </div>
           </div>
         </aside>
