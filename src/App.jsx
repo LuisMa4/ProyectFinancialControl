@@ -23,7 +23,7 @@ export default function App() {
   return (
     <>
       {currentPage === 'login' && <LoginPage onRegister={goToRegister} onLoginSuccess={goToMainpage} />}
-      {currentPage === 'register' && <RegisterPage onLogin={goToLogin} />}
+      {currentPage === 'register' && <RegisterPage onLogin={goToLogin} onRegisterSuccess={goToMainpage} />}
       {currentPage === 'mainpage' && <MainPage onLogout={goToLogin} onNavigate={(page) => setCurrentPage(page)} />}
       {currentPage === 'dashboard' && <MainPage onLogout={goToLogin} onNavigate={(page) => setCurrentPage(page)} />}
       {currentPage === 'gastos' && <GastosPage onLogout={goToLogin} onNavigate={(page) => setCurrentPage(page)} />}

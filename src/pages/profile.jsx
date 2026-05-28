@@ -64,6 +64,10 @@ const S = `
 }
 body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .app{display:flex;min-height:100vh}
+.profile-app{display:flex;min-height:100vh}
+.profile-app .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;width:auto;min-width:0}
+.profile-app .content{padding:28px 32px;display:flex;flex-direction:column;gap:22px}
+.profile-app .card{padding:0;min-width:0}
 
 /* ── SIDEBAR ── */
 .sidebar{width:var(--sidebar-w);background:var(--slate);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50}
@@ -266,7 +270,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .pw-strength{height:4px;border-radius:2px;margin-top:6px;transition:all .3s}
 
 /* ── TOAST ── */
-.toast{position:fixed;bottom:28px;right:28px;background:var(--slate);color:white;padding:13px 20px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(45,74,71,.25);animation:slideUp .3s ease;z-index:300}
+.profile-toast{position:fixed;bottom:28px;right:28px;width:max-content;max-width:min(360px,calc(100vw - 32px));background:var(--slate);color:white;padding:13px 20px;border-radius:12px;font-size:13px;line-height:1.35;display:flex;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(45,74,71,.25);animation:slideUp .3s ease;z-index:300}
 
 /* ── CONFIRM MODAL (small) ── */
 .confirm-modal{background:var(--white);border-radius:16px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(45,74,71,.2);animation:slideUp .25s ease;padding:28px}
@@ -287,13 +291,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   :root{--sidebar-w:0px}
   .sidebar{display:none}
   .main{margin-left:0}
+  .profile-app .main{margin-left:0;width:100%}
   .content{padding:16px}
+  .profile-app .content{padding:16px}
   .header{padding:0 16px}
   .hero-banner{flex-direction:column;text-align:center;padding:24px}
   .hero-stats{flex-direction:row;justify-content:center;gap:24px}
   .hero-stat{text-align:center}
   .form-grid{grid-template-columns:1fr}
   .fg.full{grid-column:1}
+  .profile-toast{left:16px;right:16px;bottom:18px;width:auto;max-width:none}
 }
 `;
 
@@ -422,7 +429,7 @@ export default function PerfilPage({ onLogout, onNavigate }) {
     <>
       <style>{S}</style>
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <div className="profile-toast">{toast}</div>}
 
       {/* ── CONFIRM MODAL ── */}
       {confirm && (
@@ -524,7 +531,7 @@ export default function PerfilPage({ onLogout, onNavigate }) {
       )}
 
       {/* ── APP ── */}
-      <div className="app">
+      <div className="app profile-app">
         <aside className="sidebar">
           <div className="sb-brand">
             <div className="sb-ico">💎</div>

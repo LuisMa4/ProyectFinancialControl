@@ -98,7 +98,7 @@ export default function Dashboard({ onLogout, onNavigate }) {
 
   return (
     <>
-      <div className="app">
+      <div className="app dashboard-app">
         {/* ── SIDEBAR ── */}
         <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="sidebar-brand">

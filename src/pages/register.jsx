@@ -20,7 +20,7 @@ function getStrength(pw) {
   return { level: score, ...map[score] };
 }
 
-export default function RegisterPage({ onLogin }) {
+export default function RegisterPage({ onLogin, onRegisterSuccess }) {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -86,7 +86,7 @@ export default function RegisterPage({ onLogin }) {
   if (done) {
     return (
       <>
-        <div className="page">
+        <div className="page register-page">
           <div className="left-panel">
             <LeftContent />
           </div>
@@ -98,7 +98,7 @@ export default function RegisterPage({ onLogin }) {
                 Bienvenido a <strong>FinVerde</strong>. Tu cuenta ha sido registrada exitosamente.
                 Ahora puedes comenzar a gestionar tus finanzas personales.
               </p>
-              <button className="btn-go">Ir al panel principal →</button>
+              <button className="btn-go" onClick={onRegisterSuccess}>Ir al panel principal →</button>
             </div>
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function RegisterPage({ onLogin }) {
 
   return (
     <>
-      <div className="page">
+      <div className="page register-page">
         {/* LEFT */}
         <div className="left-panel">
           <LeftContent />
@@ -116,6 +116,7 @@ export default function RegisterPage({ onLogin }) {
 
         {/* RIGHT */}
         <div className="right-panel">
+          <div className="register-card">
           <div className="form-header">
             <p className="form-eyebrow">Paso {step + 1} de 3</p>
             <h2 className="form-title">
@@ -359,6 +360,7 @@ export default function RegisterPage({ onLogin }) {
             ¿Ya tienes cuenta?{" "}
             <a onClick={onLogin} className="login-link">Inicia sesión</a>
           </p>
+          </div>
         </div>
       </div>
     </>
