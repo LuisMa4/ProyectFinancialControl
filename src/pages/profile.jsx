@@ -18,6 +18,21 @@ const USUARIO_INIT = {
   timezone: "America/Lima",
 };
 
+const USUARIO_EMPTY = {
+  nombre: "Cuenta",
+  apellido: "nueva",
+  email: "",
+  telefono: "",
+  moneda: "PEN",
+  idioma: "es",
+  plan: "free",
+  fechaRegistro: "",
+  avatar: "CN",
+  avatarColor: "#5AADA5",
+  presupuestoMensual: 0,
+  timezone: "America/Lima",
+};
+
 const ACTIVIDAD = [
   { id:1, tipo:"gasto",    desc:"Wong - Compras",       monto:-185.50, fecha:"Hoy, 10:32",   icon:"🛒" },
   { id:2, tipo:"ingreso",  desc:"Sueldo Mayo",          monto:+3600,   fecha:"Hoy, 09:00",   icon:"💼" },
@@ -360,11 +375,12 @@ const Switch = ({ checked, onChange }) => (
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
-export default function PerfilPage({ onLogout, onNavigate }) {
+export default function PerfilPage({ onLogout, onNavigate, isGuest = false, registeredAt }) {
+  const initialUser = isGuest ? USUARIO_INIT : { ...USUARIO_EMPTY, fechaRegistro: registeredAt || "" };
   const [activeNav, setActiveNav] = useState("perfil");
   const [tab, setTab]             = useState("personal"); // personal | seguridad | notificaciones | plan
-  const [usuario, setUsuario]     = useState(USUARIO_INIT);
-  const [form, setForm]           = useState({ ...USUARIO_INIT });
+  const [usuario, setUsuario]     = useState(initialUser);
+  const [form, setForm]           = useState({ ...initialUser });
   const [dirty, setDirty]         = useState(false);
   const [saving, setSaving]       = useState(false);
   const [toast, setToast]         = useState(null);
@@ -377,7 +393,7 @@ export default function PerfilPage({ onLogout, onNavigate }) {
   // Avatar modal
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [avEmoji, setAvEmoji]  = useState("");
-  const [avColor, setAvColor]  = useState(USUARIO_INIT.avatarColor);
+  const [avColor, setAvColor]  = useState(initialUser.avatarColor);
 
   // Password modal
   const [showPwModal, setShowPwModal]   = useState(false);
@@ -396,6 +412,12 @@ export default function PerfilPage({ onLogout, onNavigate }) {
 
   // Confirm modal
   const [confirm, setConfirm] = useState(null); // { title, msg, onOk }
+  const estadisticas = isGuest ? ESTADISTICAS : [
+    { label:"Metas activas",      val:"0", icon:"🎯", color:"#5AADA5" },
+    { label:"Meses de uso",       val:"0", icon:"📅", color:"#C9A96E" },
+    { label:"Ahorro acumulado",   val:"S/ 0", icon:"💰", color:"#4CAF7D" },
+  ];
+  const actividad = isGuest ? ACTIVIDAD : [];
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -491,7 +513,7 @@ export default function PerfilPage({ onLogout, onNavigate }) {
                 ))}
                 <button className={`av-emoji-opt${avEmoji===""?" sel":""}`}
                   style={{ fontSize: 16, fontWeight: 700, color: "var(--slate-m)" }}
-                  onClick={() => setAvEmoji("")}>JP</button>
+                  onClick={() => setAvEmoji("")}>{usuario.avatar}</button>
               </div>
               <div className="av-section">Color de fondo</div>
               <div className="av-color-grid">
@@ -575,7 +597,7 @@ export default function PerfilPage({ onLogout, onNavigate }) {
               <div className="user-av" style={{background:usuario.avatarColor}}>{usuario.avatar}</div>
               <div style={{flex:1,minWidth:0}}>
                 <div className="user-nm">{usuario.nombre} {usuario.apellido}</div>
-                <div className="user-pl">⭐ Premium</div>
+                <div className="user-pl">{isGuest ? "⭐ Premium" : "Plan gratuito"}</div>
               </div>
               {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
             </div>
@@ -612,18 +634,18 @@ export default function PerfilPage({ onLogout, onNavigate }) {
                 <div className="hero-name">{usuario.nombre} {usuario.apellido}</div>
                 <div className="hero-email">{usuario.email}</div>
                 <div className="hero-tags">
-                  <span className="hero-tag tag-plan">⭐ Plan Premium</span>
+                  <span className="hero-tag tag-plan">{isGuest ? "⭐ Plan Premium" : "Plan gratuito"}</span>
                   <span className="hero-tag tag-date">📅 Miembro desde {usuario.fechaRegistro}</span>
                   <span className="hero-tag tag-collab">🇵🇪 Lima, Perú</span>
                 </div>
               </div>
               <div className="hero-stats">
                 <div className="hero-stat">
-                  <div className="hero-stat-val">S/ 8,170</div>
+                  <div className="hero-stat-val">{isGuest ? "S/ 8,170" : "S/ 0"}</div>
                   <div className="hero-stat-lbl">Total ahorrado</div>
                 </div>
                 <div className="hero-stat">
-                  <div className="hero-stat-val">S/ 1,700</div>
+                  <div className="hero-stat-val">{isGuest ? "S/ 1,700" : "S/ 0"}</div>
                   <div className="hero-stat-lbl">Saldo libre</div>
                 </div>
               </div>
@@ -819,7 +841,7 @@ export default function PerfilPage({ onLogout, onNavigate }) {
                   </div>
                   <div className="card-body">
                     <div className="stats-grid">
-                      {ESTADISTICAS.map((s,i) => (
+                      {estadisticas.map((s,i) => (
                         <div key={i} className="stat-chip" style={{background:s.color+"18"}}>
                           <div style={{fontSize:20,marginBottom:4}}>{s.icon}</div>
                           <div className="stat-chip-val" style={{color:s.color}}>{s.val}</div>
@@ -840,13 +862,13 @@ export default function PerfilPage({ onLogout, onNavigate }) {
                   </div>
                   <div className="card-body">
                     <div className="plan-current">
-                      <div className="plan-ico">⭐</div>
+                      <div className="plan-ico">{isGuest ? "⭐" : "🌱"}</div>
                       <div className="plan-info">
-                        <div className="plan-name">Plan Premium</div>
-                        <div className="plan-sub">Renovación: 12 jun 2025</div>
+                        <div className="plan-name">{isGuest ? "Plan Premium" : "Plan Gratuito"}</div>
+                        <div className="plan-sub">{isGuest ? "Renovación: 12 jun 2025" : "Sin renovación activa"}</div>
                       </div>
                       <div>
-                        <div className="plan-price">S/ 19.90</div>
+                        <div className="plan-price">{isGuest ? "S/ 19.90" : "S/ 0.00"}</div>
                         <div className="plan-period">/ mes</div>
                       </div>
                     </div>
@@ -881,7 +903,11 @@ export default function PerfilPage({ onLogout, onNavigate }) {
                   </div>
                   <div className="card-body">
                     <div className="act-list">
-                      {ACTIVIDAD.map(a => (
+                      {actividad.length === 0 ? (
+                        <div style={{ textAlign:"center", padding:"28px 0", color:"var(--muted)", fontSize:13 }}>
+                          Aún no hay actividad registrada.
+                        </div>
+                      ) : actividad.map(a => (
                         <div className="act-item" key={a.id}>
                           <div className="act-ico">{a.icon}</div>
                           <div className="act-info">

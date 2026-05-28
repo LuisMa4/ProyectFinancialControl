@@ -296,8 +296,8 @@ const CustomTip = ({ active, payload, label }) => {
   );
 };
 
-export default function GastosPage({ onLogout, onNavigate }) {
-  const [gastos, setGastos]         = useState(GASTOS_INIT);
+export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
+  const [gastos, setGastos]         = useState(() => isGuest ? GASTOS_INIT : []);
   const [search, setSearch]         = useState("");
   const [catFilter, setCatFilter]   = useState("todas");
   const [soloRec, setSoloRec]       = useState(false);
@@ -345,6 +345,19 @@ export default function GastosPage({ onLogout, onNavigate }) {
   const presTotal  = CATEGORIAS_DEF.reduce((a, c) => a + c.presupuesto, 0);
   const recurrTotal= gastos.filter(g => g.recurrente).reduce((a, g) => a + g.monto, 0);
   const mayorGasto = [...gastos].sort((a, b) => b.monto - a.monto)[0];
+  const trendData = useMemo(() => {
+    if (!gastos.length) return [];
+
+    const dailyTotals = gastos.reduce((acc, gasto) => {
+      const day = String(new Date(gasto.fecha + "T12:00:00").getDate());
+      acc[day] = (acc[day] || 0) + gasto.monto;
+      return acc;
+    }, {});
+
+    return Object.entries(dailyTotals)
+      .map(([dia, monto]) => ({ dia, monto }))
+      .sort((a, b) => Number(a.dia) - Number(b.dia));
+  }, [gastos]);
 
   // Category totals
   const catTotals = useMemo(() => CATEGORIAS_DEF.map(c => ({
@@ -469,10 +482,10 @@ export default function GastosPage({ onLogout, onNavigate }) {
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
-              <div className="user-av">JP</div>
+              <div className="user-av">{isGuest ? "JP" : "CN"}</div>
               <div style={{ flex: 1 }}>
-                <div className="user-nm">Juan Pérez</div>
-                <div className="user-pl">⭐ Premium</div>
+                <div className="user-nm">{isGuest ? "Juan Pérez" : "Cuenta nueva"}</div>
+                <div className="user-pl">{isGuest ? "⭐ Premium" : "Plan gratuito"}</div>
               </div>
               {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
             </div>
@@ -534,7 +547,7 @@ export default function GastosPage({ onLogout, onNavigate }) {
                   <span className="sum-icon">📊</span>
                   <span className="sum-badge badge-green">{gastos.length} registros</span>
                 </div>
-                <div className="sum-val">{fmt(totalMes / gastos.length)}</div>
+                <div className="sum-val">{fmt(gastos.length ? totalMes / gastos.length : 0)}</div>
                 <div className="sum-lbl">Gasto promedio por operación</div>
               </div>
             </div>
@@ -655,15 +668,22 @@ export default function GastosPage({ onLogout, onNavigate }) {
                       <div className="card-sub">Gastos diarios {currentPeriod.month}</div>
                     </div>
                   </div>
-                  <ResponsiveContainer width="100%" height={110}>
-                    <LineChart data={TREND_DATA} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
-                      <XAxis dataKey="dia" tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
-                      <Tooltip content={<CustomTip />} />
-                      <Line type="monotone" dataKey="monto" stroke="#5AADA5" strokeWidth={2.5}
-                        dot={false} activeDot={{ r: 4, fill: "#5AADA5" }} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  {trendData.length === 0 ? (
+                    <div className="empty-state" style={{ padding: "24px 0" }}>
+                      <div className="empty-icon">📈</div>
+                      <div className="empty-txt">Aún no hay gastos para mostrar tendencia.</div>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={110}>
+                      <LineChart data={trendData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+                        <XAxis dataKey="dia" tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
+                        <Tooltip content={<CustomTip />} />
+                        <Line type="monotone" dataKey="monto" stroke="#5AADA5" strokeWidth={2.5}
+                          dot={false} activeDot={{ r: 4, fill: "#5AADA5" }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
 
                 {/* Category breakdown */}

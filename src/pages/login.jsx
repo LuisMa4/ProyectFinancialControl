@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./login.css";
 
-export default function LoginPage({ onRegister, onLoginSuccess }) {
+export default function LoginPage({ onRegister, onLoginSuccess, onGuest }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -163,7 +163,7 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
                 <div className="divider-line" />
               </div>
 
-              <button type="button" className="btn-guest">
+              <button type="button" className="btn-guest" onClick={onGuest}>
                 👤 Explorar como visitante
               </button>
 

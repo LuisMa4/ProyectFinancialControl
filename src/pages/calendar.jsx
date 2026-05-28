@@ -398,12 +398,12 @@ const TODAY = new Date();
 ───────────────────────────────────────── */
 const FORM_DEF = { desc: "", tipo: "pago", monto: "", dia: "", icono: "💳", recurrente: false };
 
-export default function CalendarioPage({ onNavigate }) {
+export default function CalendarioPage({ onNavigate, onLogout, isGuest = false }) {
   const [year, setYear]   = useState(TODAY.getFullYear());
   const [month, setMonth] = useState(TODAY.getMonth());
   const [view, setView]   = useState("mes"); // mes | semana | lista
   const [selected, setSelected] = useState(TODAY.getDate());
-  const [eventos, setEventos]   = useState(EVENTOS_INIT);
+  const [eventos, setEventos]   = useState(() => isGuest ? EVENTOS_INIT : []);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]           = useState({ ...FORM_DEF });
   const [editId, setEditId]       = useState(null);
@@ -615,11 +615,12 @@ export default function CalendarioPage({ onNavigate }) {
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
-              <div className="user-av">JP</div>
+              <div className="user-av">{isGuest ? "JP" : "CN"}</div>
               <div style={{flex:1,minWidth:0}}>
-                <div className="user-nm">Juan Pérez</div>
-                <div className="user-pl">⭐ Premium</div>
+                <div className="user-nm">{isGuest ? "Juan Pérez" : "Cuenta nueva"}</div>
+                <div className="user-pl">{isGuest ? "⭐ Premium" : "Plan gratuito"}</div>
               </div>
+              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
             </div>
           </div>
         </aside>

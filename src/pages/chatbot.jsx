@@ -60,12 +60,21 @@ const SUGERENCIAS_INIT = [
   { id:6, texto:"Analiza mi salud financiera",          icono:"🩺" },
 ];
 
-const CONVERSACIONES_PREV = [
-  { id:"c1", titulo:"Análisis de abril",     fecha:"20 mayo",  preview:"¿Cómo me fue comparado a marzo?" },
-  { id:"c2", titulo:"Plan de ahorro Europa", fecha:"15 mayo",  preview:"Quiero llegar a S/ 8,000 antes de..." },
-  { id:"c3", titulo:"Tips de inversión",     fecha:"10 mayo",  preview:"¿Vale la pena poner dinero en..." },
-  { id:"c4", titulo:"Presupuesto mayo",      fecha:"1 mayo",   preview:"Ayúdame a planificar este mes" },
+const SUGERENCIAS_EMPTY = [
+  { id:1, texto:"¿Cómo empiezo mi presupuesto desde cero?", icono:"📊" },
+  { id:2, texto:"¿Qué categorías de gastos debería crear?", icono:"💳" },
+  { id:3, texto:"Ayúdame a definir mi primera meta", icono:"🎯" },
+  { id:4, texto:"Dame 3 tips para organizar mis finanzas", icono:"💡" },
 ];
+
+const CONTEXTO_CUENTA_NUEVA = `
+Eres Fina, la asistente financiera personal de FinVerde.
+El usuario acaba de iniciar una cuenta nueva y todavía no tiene gastos, metas ni eventos registrados.
+Ayúdalo a empezar desde cero: sugiere primeros pasos, categorías iniciales, presupuestos realistas y metas de ahorro.
+No inventes datos financieros personales. Si necesitas cifras, pide al usuario sus ingresos, gastos fijos o prioridades.
+Responde SIEMPRE en español, de forma cálida, concisa y con emojis moderados.
+IMPORTANTE: responde en máximo 200 palabras salvo que el usuario pida un análisis detallado.
+`;
 
 /* ─────────────────────────────────────────
    STYLES
@@ -343,16 +352,21 @@ const getCurrentPeriodLabel = () => {
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
-export default function ChatbotPage({ onNavigate }) {
+export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
   const [messages, setMessages]     = useState([]);
   const [input, setInput]           = useState("");
   const [loading, setLoading]       = useState(false);
   const [activeNav, setActiveNav]   = useState("chatbot");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
-  const [activeConv, setActiveConv] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
+  const displayName = isGuest ? "Juan Pérez" : "Cuenta nueva";
+  const firstName = isGuest ? "Juan" : "Cuenta";
+  const avatar = isGuest ? "JP" : "CN";
+  const planLabel = isGuest ? "⭐ Premium" : "Plan gratuito";
+  const suggestions = isGuest ? SUGERENCIAS_INIT : SUGERENCIAS_EMPTY;
+  const contextPrompt = isGuest ? CONTEXTO_FINANCIERO : CONTEXTO_CUENTA_NUEVA;
 
   const handleNavClick = (id) => {
     setActiveNav(id);
@@ -385,7 +399,7 @@ export default function ChatbotPage({ onNavigate }) {
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
-          system: CONTEXTO_FINANCIERO,
+          system: contextPrompt,
           messages: [...historyForApi, { role: "user", content }],
         }),
       });
@@ -413,7 +427,6 @@ export default function ChatbotPage({ onNavigate }) {
 
   const nuevaConversacion = () => {
     setMessages([]);
-    setActiveConv(null);
     inputRef.current?.focus();
   };
 
@@ -444,11 +457,12 @@ export default function ChatbotPage({ onNavigate }) {
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
-              <div className="user-av">JP</div>
+              <div className="user-av">{avatar}</div>
               <div style={{flex:1,minWidth:0}}>
-                <div className="user-nm">Juan Pérez</div>
-                <div className="user-pl">⭐ Premium</div>
+                <div className="user-nm">{displayName}</div>
+                <div className="user-pl">{planLabel}</div>
               </div>
+              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
             </div>
           </div>
         </aside>
@@ -477,9 +491,9 @@ export default function ChatbotPage({ onNavigate }) {
           {/* CONTEXT BAR */}
           <div className="context-bar">
             <span className="ctx-label">Contexto activo:</span>
-            <span className="ctx-item"><span className="ctx-dot"/>{" "}Perfil de Juan</span>
-            <span className="ctx-item">💰 Saldo S/ 1,700</span>
-            <span className="ctx-item">🎯 4 metas activas</span>
+            <span className="ctx-item"><span className="ctx-dot"/>{" "}{isGuest ? "Perfil de Juan" : "Cuenta nueva"}</span>
+            <span className="ctx-item">💰 Saldo {isGuest ? "S/ 1,700" : "S/ 0"}</span>
+            <span className="ctx-item">🎯 {isGuest ? "4 metas activas" : "0 metas"}</span>
             <span className="ctx-item">📅 {currentPeriodLabel}</span>
           </div>
 
@@ -494,22 +508,7 @@ export default function ChatbotPage({ onNavigate }) {
                   </button>
                 </div>
                 <div className="hist-list">
-                  <div className="hist-sep">Este mes</div>
-                  {CONVERSACIONES_PREV.map(c => (
-                    <div key={c.id} className={`hist-item${activeConv===c.id?" active":""}`}
-                      onClick={() => setActiveConv(c.id)}>
-                      <div className="hist-item-title">{c.titulo}</div>
-                      <div className="hist-item-date">{c.fecha}</div>
-                      <div className="hist-item-preview">{c.preview}</div>
-                    </div>
-                  ))}
-                  <div className="hist-sep" style={{marginTop:8}}>Anterior</div>
-                  {["Análisis de marzo","Metas Q1","Tips inversión"].map((t, i) => (
-                    <div key={i} className="hist-item">
-                      <div className="hist-item-title">{t}</div>
-                      <div className="hist-item-date">{["28 abr","15 abr","2 abr"][i]}</div>
-                    </div>
-                  ))}
+                  <div className="hist-sep">Sin conversaciones anteriores</div>
                 </div>
               </div>
             )}
@@ -522,12 +521,12 @@ export default function ChatbotPage({ onNavigate }) {
                 {messages.length === 0 && (
                   <div className="welcome">
                     <div className="welcome-avatar">🤖</div>
-                    <h2 className="welcome-title">{greeting}, Juan 👋</h2>
+                    <h2 className="welcome-title">{greeting}, {firstName} 👋</h2>
                     <p className="welcome-sub">
                       Soy <strong>Fina</strong>, tu asistente financiera personal. Tengo acceso a tus datos de FinVerde y puedo ayudarte a entender tus finanzas, optimizar tus ahorros y tomar mejores decisiones de dinero.
                     </p>
                     <div className="suggestions-grid">
-                      {SUGERENCIAS_INIT.map(s => (
+                      {suggestions.map(s => (
                         <button key={s.id} className="sug-chip" onClick={() => sendMessage(s.texto)}>
                           <span className="sug-ico">{s.icono}</span>
                           <span className="sug-txt">{s.texto}</span>
@@ -541,7 +540,7 @@ export default function ChatbotPage({ onNavigate }) {
                 {messages.map(msg => (
                   <div key={msg.id} className={`msg ${msg.role === "user" ? "user" : "fina"}`}>
                     <div className={`msg-avatar ${msg.role === "user" ? "user" : "fina"}`}>
-                      {msg.role === "user" ? "JP" : "🤖"}
+                      {msg.role === "user" ? avatar : "🤖"}
                     </div>
                     <div className="msg-bubble">
                       <div className="msg-content">

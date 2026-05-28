@@ -315,8 +315,8 @@ const MetaRing = ({ pct, color, size = 90 }) => {
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
-export default function MetasPage({ onLogout, onNavigate }) {
-  const [metas, setMetas]         = useState(METAS_INIT);
+export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
+  const [metas, setMetas]         = useState(() => isGuest ? METAS_INIT : []);
   const [activeNav, setActiveNav] = useState("metas");
   const [viewMode, setViewMode]   = useState("grid"); // grid | list
   const [filtro, setFiltro]       = useState("todas"); // todas | activas | completadas
@@ -353,6 +353,7 @@ export default function MetasPage({ onLogout, onNavigate }) {
   const totalAhorrado = metas.reduce((a, m) => a + Math.min(m.actual, m.meta), 0);
   const completadas  = metas.filter(m => m.actual >= m.meta).length;
   const aporteTotal  = metas.reduce((a, m) => a + m.aporteMensual, 0);
+  const progresoTotal = totalMeta ? Math.round((totalAhorrado / totalMeta) * 100) : 0;
 
   const openNueva = () => { setForm(FORM_DEF); setEditMeta(null); setModalNueva(true); };
   const openEditar = (m) => {
@@ -608,10 +609,10 @@ export default function MetasPage({ onLogout, onNavigate }) {
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
-              <div className="user-av">JP</div>
+              <div className="user-av">{isGuest ? "JP" : "CN"}</div>
               <div style={{ flex: 1 }}>
-                <div className="user-nm">Juan Pérez</div>
-                <div className="user-pl">⭐ Premium</div>
+                <div className="user-nm">{isGuest ? "Juan Pérez" : "Cuenta nueva"}</div>
+                <div className="user-pl">{isGuest ? "⭐ Premium" : "Plan gratuito"}</div>
               </div>
               {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
             </div>
@@ -673,7 +674,7 @@ export default function MetasPage({ onLogout, onNavigate }) {
               <div className="kpi" style={{ animationDelay: ".17s" }}>
                 <div className="kpi-top">
                   <span className="kpi-ico">📈</span>
-                  <span className="kpi-badge b-mu">{Math.round((totalAhorrado / totalMeta) * 100)}%</span>
+                  <span className="kpi-badge b-mu">{progresoTotal}%</span>
                 </div>
                 <div className="kpi-val">{fmt(totalMeta - totalAhorrado)}</div>
                 <div className="kpi-lbl">Falta para completar todo</div>
