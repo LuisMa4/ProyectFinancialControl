@@ -89,7 +89,9 @@ const S = `
   --sidebar-w:240px;--header-h:68px;
 }
 body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
+#root:has(.metas-app){width:100%;max-width:none;min-height:100svh;margin:0;border:0;text-align:left}
 .app{display:flex;min-height:100vh}
+.metas-app{display:flex;width:100%;min-height:100svh;background:var(--mint)}
 
 /* SIDEBAR */
 .sidebar{width:var(--sidebar-w);background:var(--slate);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50}
@@ -107,7 +109,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .user-pl{font-size:11px;color:var(--agua-l)}
 
 /* MAIN */
-.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-width:0}
+.metas-app .main{width:calc(100% - var(--sidebar-w))}
 
 /* HEADER */
 .header{height:var(--header-h);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:40}
@@ -123,10 +126,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .vt-btn.on{background:var(--agua-d);color:white}
 
 /* CONTENT */
-.content{padding:28px 32px;display:flex;flex-direction:column;gap:22px}
+.content{padding:clamp(18px,2.5vw,32px);display:flex;flex-direction:column;gap:22px;width:100%}
 
 /* KPI STRIP */
-.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .kpi{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px 20px;animation:fadeUp .35s ease both}
 .kpi.hl{background:linear-gradient(135deg,var(--agua-d),var(--agua));border-color:transparent}
 .kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -142,11 +145,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .kpi.hl .kpi-lbl{color:rgba(255,255,255,.7)}
 
 /* GRID CARDS */
-.cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .cards-grid.list-view{grid-template-columns:1fr}
 
 /* META CARD */
-.meta-card{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:box-shadow .2s,transform .2s;animation:fadeUp .4s ease both;cursor:pointer}
+.meta-card{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:box-shadow .2s,transform .2s;animation:fadeUp .4s ease both;cursor:pointer;min-width:0}
 .meta-card:hover{box-shadow:0 6px 28px rgba(90,173,165,.13);transform:translateY(-2px)}
 .meta-card.done-card{opacity:.85}
 
@@ -241,15 +244,32 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
-@media(max-width:1050px){.cards-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1050px){.cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:768px){
   :root{--sidebar-w:0px}
   .sidebar{display:none}
   .main{margin-left:0}
+  .metas-app .main{width:100%}
   .content{padding:16px}
   .header{padding:0 16px}
   .kpi-strip{grid-template-columns:1fr 1fr}
   .cards-grid{grid-template-columns:1fr}
+  .cards-grid.list-view .meta-card{display:block}
+  .cards-grid.list-view .mc-header,.cards-grid.list-view .mc-body{border-right:none}
+  .cards-grid.list-view .mc-footer{border-top:1px solid var(--border);align-items:center;flex-direction:row}
+}
+@media(max-width:560px){
+  .header{height:auto;min-height:var(--header-h);align-items:flex-start;flex-direction:column;gap:12px;padding:14px 16px}
+  .hd-right{width:100%;justify-content:space-between;flex-wrap:wrap}
+  .kpi-strip{grid-template-columns:1fr}
+  .mc-header,.mc-ring-row,.mc-footer{align-items:flex-start;flex-direction:column}
+  .mc-right{align-items:flex-start}
+  .mc-actions{width:100%}
+  .mc-btn{flex:1}
+  .modal{max-width:calc(100vw - 24px);padding:22px}
+  .fg2{grid-template-columns:1fr}
+  .prio-grid,.mf{flex-direction:column}
+  .toast{left:16px;right:16px;bottom:18px;max-width:none}
 }
 `;
 
@@ -570,7 +590,7 @@ export default function MetasPage({ onLogout, onNavigate }) {
       )}
 
       {/* ── APP ── */}
-      <div className="app">
+      <div className="app metas-app">
         {/* SIDEBAR */}
         <aside className="sidebar">
           <div className="sb-brand">

@@ -74,9 +74,11 @@ const S = `
   --sidebar-w:240px;--header-h:68px;
 }
 body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
+#root:has(.gastos-app){width:100%;max-width:none;min-height:100svh;margin:0;border:0;text-align:left}
 
 /* LAYOUT */
 .app{display:flex;min-height:100vh}
+.gastos-app{display:flex;width:100%;min-height:100svh;background:var(--mint)}
 
 /* SIDEBAR */
 .sidebar{
@@ -98,7 +100,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .user-pl{font-size:11px;color:var(--agua-l)}
 
 /* MAIN */
-.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-width:0}
+.gastos-app .main{width:calc(100% - var(--sidebar-w))}
 
 /* HEADER */
 .header{height:var(--header-h);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:40}
@@ -113,10 +116,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .btn-icon:hover{background:var(--mint);border-color:var(--agua-l)}
 
 /* CONTENT */
-.content{padding:28px 32px;display:flex;flex-direction:column;gap:22px}
+.content{padding:clamp(18px,2.5vw,32px);display:flex;flex-direction:column;gap:22px;width:100%}
 
 /* SUMMARY STRIP */
-.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.summary-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .sum-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:6px;animation:fadeUp .35s ease both}
 .sum-card.accent{background:linear-gradient(135deg,var(--agua-d),var(--agua));border-color:transparent}
 .sum-top{display:flex;align-items:center;justify-content:space-between}
@@ -138,10 +141,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .prog-txt{font-size:10px;color:rgba(255,255,255,.7);white-space:nowrap}
 
 /* MAIN GRID */
-.main-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.main-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,340px);gap:20px;align-items:start}
 
 /* CARD */
-.card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px;animation:fadeUp .4s ease both}
+.card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px;animation:fadeUp .4s ease both;min-width:0}
 .card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .card-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--slate);letter-spacing:-.2px}
 .card-sub{font-size:11px;color:var(--muted);margin-top:2px}
@@ -253,9 +256,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   :root{--sidebar-w:0px}
   .sidebar{display:none}
   .main{margin-left:0}
+  .gastos-app .main{width:100%}
   .content{padding:16px}
   .summary-strip{grid-template-columns:1fr 1fr}
   .header{padding:0 16px}
+}
+@media(max-width:560px){
+  .header{height:auto;min-height:var(--header-h);align-items:flex-start;flex-direction:column;gap:12px;padding:14px 16px}
+  .hd-right{width:100%;justify-content:space-between}
+  .summary-strip{grid-template-columns:1fr}
+  .card{padding:18px}
+  .filters{align-items:stretch;flex-direction:column}
+  .search-wrap{min-width:0;width:100%}
+  .filter-sel,.chip{width:100%}
+  .tx-table{display:block;overflow-x:auto;white-space:nowrap}
+  .pagination{align-items:flex-start;flex-direction:column;gap:10px}
+  .modal{max-width:calc(100vw - 24px);padding:22px}
+  .form-grid-2,.cat-select-grid{grid-template-columns:1fr 1fr}
+  .toast{left:16px;right:16px;bottom:18px;max-width:none}
 }
 `;
 
@@ -426,7 +444,7 @@ export default function GastosPage({ onLogout, onNavigate }) {
         </div>
       )}
 
-      <div className="app">
+      <div className="app gastos-app">
         {/* SIDEBAR */}
         <aside className="sidebar">
           <div className="sb-brand">
