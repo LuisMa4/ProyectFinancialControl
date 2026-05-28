@@ -233,7 +233,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .hist-val{font-weight:500;color:var(--agua-d)}
 
 /* TOAST */
-.toast{position:fixed;bottom:28px;right:28px;background:var(--slate);color:white;padding:13px 20px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(45,74,71,.25);animation:slideUp .3s ease;z-index:300}
+.metas-toast{position:fixed;bottom:28px;right:28px;width:max-content;max-width:min(360px,calc(100vw - 32px));background:var(--slate);color:white;padding:13px 20px;border-radius:12px;font-size:13px;line-height:1.35;display:flex;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(45,74,71,.25);animation:slideUp .3s ease;z-index:300}
 
 /* EMPTY */
 .empty{text-align:center;padding:64px 0;color:var(--muted)}
@@ -269,7 +269,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   .modal{max-width:calc(100vw - 24px);padding:22px}
   .fg2{grid-template-columns:1fr}
   .prio-grid,.mf{flex-direction:column}
-  .toast{left:16px;right:16px;bottom:18px;max-width:none}
+  .metas-toast{left:16px;right:16px;bottom:18px;width:auto;max-width:none}
 }
 `;
 
@@ -397,7 +397,7 @@ export default function MetasPage({ onLogout, onNavigate }) {
     <>
       <style>{S}</style>
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <div className="metas-toast">{toast}</div>}
 
       {/* ── MODAL NUEVA / EDITAR ── */}
       {modalNueva && (

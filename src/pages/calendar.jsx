@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import CreateEvent from "../components/CreateEvent.jsx";
 
 /* ─────────────────────────────────────────
    DATA
@@ -308,7 +309,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .btn-save:hover{transform:translateY(-1px)}
 
 /* TOAST */
-.toast{position:fixed;bottom:24px;right:24px;background:var(--slate);color:white;padding:12px 18px;border-radius:11px;font-size:13px;display:flex;align-items:center;gap:9px;box-shadow:0 6px 24px rgba(45,74,71,.25);animation:slideUp .3s ease;z-index:300;max-width:320px}
+.calendar-toast{position:fixed;bottom:24px;right:24px;width:max-content;max-width:min(320px,calc(100vw - 32px));background:var(--slate);color:white;padding:12px 18px;border-radius:11px;font-size:13px;line-height:1.35;display:flex;align-items:center;gap:9px;box-shadow:0 6px 24px rgba(45,74,71,.25);animation:slideUp .3s ease;z-index:300}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -357,6 +358,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   .btn-primary span.label{display:none}
   .month-nav-right .view-toggle{display:none}
   .hd-title{font-size:17px}
+  .calendar-toast{left:16px;right:16px;bottom:18px;width:auto;max-width:none}
 }
 
 /* Very small (< 380px) */
@@ -467,6 +469,25 @@ export default function CalendarioPage({ onNavigate }) {
     setShowModal(false);
   };
 
+  const guardarDesdeCreateEvent = (data) => {
+    const tipo = data.tipo === "actividad" ? "meta" : data.tipo;
+    const montoBase = Number(data.monto || 0);
+    const montoFinal = tipo === "ingreso" ? montoBase : -Math.abs(montoBase);
+    const colorMap = { ingreso: "#4CAF7D", pago: "#E07070", meta: "#C9A96E" };
+    const entry = {
+      id: Date.now(),
+      desc: data.desc,
+      tipo,
+      monto: montoFinal,
+      dia: Number(data.dia),
+      icono: data.icono || (tipo === "ingreso" ? "💼" : "💳"),
+      color: colorMap[tipo] || "#7EC8C0",
+      recurrente: Boolean(data.recurrente),
+    };
+    setEventos(prev => [...prev, entry]);
+    showToast("✓ Evento añadido al calendario");
+  };
+
   const eliminar = (id) => { setEventos(prev => prev.filter(e => e.id !== id)); showToast("✓ Evento eliminado"); };
 
   // Week view data
@@ -493,13 +514,23 @@ export default function CalendarioPage({ onNavigate }) {
   return (
     <>
       <style>{S}</style>
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <div className="calendar-toast">{toast}</div>}
 
       {/* Sidebar overlay */}
       <div className={`sb-overlay${sidebarOpen ? " show" : ""}`} onClick={() => setSidebarOpen(false)} />
 
       {/* ── MODAL ── */}
-      {showModal && (
+      {showModal && !editId && (
+        <CreateEvent
+          dia={Number(form.dia || selected)}
+          mes={month}
+          anio={year}
+          onClose={() => setShowModal(false)}
+          onSave={guardarDesdeCreateEvent}
+        />
+      )}
+
+      {showModal && editId && (
         <div className="overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal-sheet">
             <div className="modal-drag" />
@@ -690,7 +721,7 @@ export default function CalendarioPage({ onNavigate }) {
                         return (
                           <div key={idx}
                             className={`cal-cell${!isCur?" other-month":""}${isToday?" today":""}${isSel?" selected":""}${weekend&&isCur?" weekend":""}`}
-                            onClick={() => { if (isCur) setSelected(cell.day); }}>
+                            onClick={() => { if (isCur) { setSelected(cell.day); openNew(cell.day); } }}>
                             <div className="cal-day-num">{cell.day}</div>
                             {/* Desktop: pills */}
                             {evs.slice(0, 2).map(ev => (

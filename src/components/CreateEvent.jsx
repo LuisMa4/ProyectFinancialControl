@@ -12,7 +12,7 @@ const S = `
   --muted:#8AADA9;--border:#DDE9E7;--gold:#C9A96E;--red:#E07070;--green:#4CAF7D;
   --orange:#E8945A;
 }
-body{font-family:'DM Sans',sans-serif;background:#c8e6e3;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+body{font-family:'DM Sans',sans-serif}
 
 /* ── DEMO TRIGGER ── */
 .demo-wrap{display:flex;flex-direction:column;align-items:center;gap:24px}
@@ -666,7 +666,14 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
 /* ─────────────────────────────────────────
    DEMO WRAPPER
 ───────────────────────────────────────── */
-export default function Demo() {
+export default function CreateEvent(props) {
+  return (
+    <>
+      <style>{S}</style>
+      <CalEventoModal {...props} />
+    </>
+  );
+
   const [modalDia, setModalDia] = useState(null);
 
   const hoy = new Date();

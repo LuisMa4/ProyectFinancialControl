@@ -471,7 +471,7 @@ body:has(.page) {
   cursor: pointer;
 }
 
-.toast {
+.login-toast {
   position: fixed;
   top: max(18px, env(safe-area-inset-top));
   right: max(18px, env(safe-area-inset-right));
@@ -587,7 +587,7 @@ body:has(.page) {
     text-align: left;
   }
 
-  .toast {
+  .login-toast {
     right: 16px;
     left: 16px;
     max-width: none;

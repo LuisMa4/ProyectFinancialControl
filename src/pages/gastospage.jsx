@@ -241,8 +241,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .trend-card{animation-delay:.3s}
 
 /* TOAST */
-.toast{position:fixed;bottom:28px;right:28px;background:var(--slate);color:white;padding:13px 20px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(45,74,71,.25);animation:slideUp .3s ease;z-index:300}
-.toast.error{background:#C0504D}
+.gastos-toast{position:fixed;bottom:28px;right:28px;width:max-content;max-width:min(360px,calc(100vw - 32px));background:var(--slate);color:white;padding:13px 20px;border-radius:12px;font-size:13px;line-height:1.35;display:flex;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(45,74,71,.25);animation:slideUp .3s ease;z-index:300}
+.gastos-toast.error{background:#C0504D}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -273,7 +273,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   .pagination{align-items:flex-start;flex-direction:column;gap:10px}
   .modal{max-width:calc(100vw - 24px);padding:22px}
   .form-grid-2,.cat-select-grid{grid-template-columns:1fr 1fr}
-  .toast{left:16px;right:16px;bottom:18px;max-width:none}
+  .gastos-toast{left:16px;right:16px;bottom:18px;width:auto;max-width:none}
 }
 `;
 
@@ -383,7 +383,7 @@ export default function GastosPage({ onLogout, onNavigate }) {
   return (
     <>
       <style>{S}</style>
-      {toast && <div className={`toast${toast.err ? " error" : ""}`}>{toast.err ? "⚠" : "✓"} {toast.msg}</div>}
+      {toast && <div className={`gastos-toast${toast.err ? " error" : ""}`}>{toast.err ? "⚠" : "✓"} {toast.msg}</div>}
 
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>

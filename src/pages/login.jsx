@@ -46,7 +46,7 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
   return (
     <>
       {toast && (
-        <div className="toast">
+        <div className="login-toast">
           <span>✓</span> {toast}
         </div>
       )}
