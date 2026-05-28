@@ -53,9 +53,11 @@ const S = `
 }
 html,body{height:100%}
 body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
+#root:has(.calendar-app){width:100%;max-width:none;min-height:100svh;margin:0;border:0;text-align:left}
 
 /* ── LAYOUT ── */
 .app{display:flex;min-height:100vh}
+.calendar-app{display:flex;width:100%;min-height:100svh;background:var(--mint)}
 
 /* ── SIDEBAR ── */
 .sidebar{
@@ -85,6 +87,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 
 /* ── MAIN ── */
 .main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-width:0}
+.calendar-app .main{width:calc(100% - var(--sw))}
 
 /* ── HEADER ── */
 .header{
@@ -107,7 +110,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .btn-ghost:hover{background:var(--mint);border-color:var(--agua-l)}
 
 /* ── CONTENT ── */
-.content{padding:20px 24px;display:flex;flex-direction:column;gap:18px;flex:1}
+.content{padding:20px 24px;display:flex;flex-direction:column;gap:18px;flex:1;width:100%}
 
 /* ── MONTH NAV ── */
 .month-nav{
@@ -138,7 +141,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .bal-card.accent .bal-lbl{color:rgba(255,255,255,.7)}
 
 /* ── MAIN GRID ── */
-.cal-layout{display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+.cal-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);gap:18px;align-items:start}
 
 /* ── CALENDAR GRID ── */
 .cal-card{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;animation:fadeUp .4s ease both;animation-delay:.1s}
@@ -328,6 +331,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   .sidebar.open{transform:translateX(0)}
   .hamburger{display:flex}
   .main{margin-left:0}
+  .calendar-app .main{width:100%}
   .balance-strip{grid-template-columns:repeat(2,1fr)}
   .right-panel{grid-template-columns:1fr 1fr}
 }
@@ -390,7 +394,7 @@ const TODAY = new Date();
 ───────────────────────────────────────── */
 const FORM_DEF = { desc: "", tipo: "pago", monto: "", dia: "", icono: "💳", recurrente: false };
 
-export default function CalendarioPage() {
+export default function CalendarioPage({ onNavigate }) {
   const [year, setYear]   = useState(TODAY.getFullYear());
   const [month, setMonth] = useState(TODAY.getMonth());
   const [view, setView]   = useState("mes"); // mes | semana | lista
@@ -404,6 +408,12 @@ export default function CalendarioPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const showToast = (m) => { setToast(m); setTimeout(() => setToast(null), 3000); };
+
+  const handleNavClick = (id) => {
+    setActiveNav(id);
+    setSidebarOpen(false);
+    if (onNavigate) onNavigate(id);
+  };
 
   const cells = useMemo(() => buildCalendar(year, month), [year, month]);
 
@@ -554,7 +564,7 @@ export default function CalendarioPage() {
         </div>
       )}
 
-      <div className="app">
+      <div className="app calendar-app">
         {/* SIDEBAR */}
         <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="sb-brand">
@@ -564,7 +574,7 @@ export default function CalendarioPage() {
           <nav className="sb-nav">
             {NAV_ITEMS.map(item => (
               <button key={item.id} className={`nav-item${activeNav===item.id?" active":""}`}
-                onClick={() => { setActiveNav(item.id); setSidebarOpen(false); }}>
+                onClick={() => handleNavClick(item.id)}>
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}
               </button>

@@ -81,9 +81,11 @@ const S = `
 }
 html,body{height:100%;overflow:hidden}
 body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
+#root:has(.chatbot-app){width:100%;max-width:none;min-height:100svh;margin:0;border:0;text-align:left}
 
 /* ── LAYOUT ── */
 .app{display:flex;height:100vh;overflow:hidden}
+.chatbot-app{display:flex;width:100%;height:100svh;overflow:hidden;background:var(--mint)}
 
 /* ── SIDEBAR ── */
 .sidebar{width:var(--sw);background:var(--slate);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .3s ease;flex-shrink:0}
@@ -105,6 +107,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 
 /* ── MAIN ── */
 .main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden}
+.chatbot-app .main{width:calc(100% - var(--sw));height:100svh}
 
 /* ── HEADER ── */
 .header{background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;flex-shrink:0;gap:12px}
@@ -120,7 +123,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .btn-ghost.active-btn{background:var(--agua-p);border-color:var(--agua);color:var(--agua-d)}
 
 /* ── CHAT LAYOUT ── */
-.chat-layout{display:grid;grid-template-columns:260px 1fr;flex:1;overflow:hidden;min-height:0}
+.chat-layout{display:grid;grid-template-columns:minmax(220px,260px) minmax(0,1fr);flex:1;overflow:hidden;min-height:0}
+.chat-layout.no-history{grid-template-columns:1fr}
 
 /* ── HISTORY PANEL ── */
 .history-panel{background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
@@ -239,6 +243,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   .sidebar.open{transform:translateX(0)}
   .hamburger{display:flex}
   .main{margin-left:0}
+  .chatbot-app .main{width:100%}
   .suggestions-grid{grid-template-columns:repeat(2,1fr);max-width:100%}
   .messages{padding:16px}
   .input-area{padding:12px 16px}
@@ -247,8 +252,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 @media(max-width:560px){
   .header{padding:0 14px;height:58px}
   .hd-title{font-size:17px}
+  .hd-eye{display:none}
+  .hd-right{gap:6px}
+  .btn-ghost{padding:7px 9px;font-size:12px}
   .suggestions-grid{grid-template-columns:1fr 1fr}
   .msg-bubble{max-width:88%}
+  .messages{padding:14px 12px}
   .welcome{padding:28px 16px 16px}
   .welcome-title{font-size:21px}
   .welcome-avatar{width:60px;height:60px;font-size:26px}
@@ -328,7 +337,7 @@ const timestamp = () => new Date().toLocaleTimeString("es-PE", { hour:"2-digit",
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
-export default function ChatbotPage() {
+export default function ChatbotPage({ onNavigate }) {
   const [messages, setMessages]     = useState([]);
   const [input, setInput]           = useState("");
   const [loading, setLoading]       = useState(false);
@@ -338,6 +347,12 @@ export default function ChatbotPage() {
   const [activeConv, setActiveConv] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
+
+  const handleNavClick = (id) => {
+    setActiveNav(id);
+    setSidebarOpen(false);
+    if (onNavigate) onNavigate(id);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -404,7 +419,7 @@ export default function ChatbotPage() {
       <style>{S}</style>
       <div className={`sb-overlay${sidebarOpen?" show":""}`} onClick={() => setSidebarOpen(false)} />
 
-      <div className="app">
+      <div className="app chatbot-app">
         {/* SIDEBAR */}
         <aside className={`sidebar${sidebarOpen?" open":""}`}>
           <div className="sb-brand">
@@ -414,7 +429,7 @@ export default function ChatbotPage() {
           <nav className="sb-nav">
             {NAV_ITEMS.map(item => (
               <button key={item.id} className={`nav-item${activeNav===item.id?" active":""}`}
-                onClick={() => { setActiveNav(item.id); setSidebarOpen(false); }}>
+                onClick={() => handleNavClick(item.id)}>
                 <span style={{fontSize:15,width:19,textAlign:"center",flexShrink:0}}>{item.icon}</span>
                 {item.label}
               </button>
@@ -461,7 +476,7 @@ export default function ChatbotPage() {
             <span className="ctx-item">📅 Mayo 2025</span>
           </div>
 
-          <div className="chat-layout">
+          <div className={`chat-layout${showHistory ? "" : " no-history"}`}>
             {/* HISTORY PANEL */}
             {showHistory && (
               <div className="history-panel">
