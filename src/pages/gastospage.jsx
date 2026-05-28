@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, LineChart, Line
@@ -279,6 +279,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 
 const fmt = (n) => `S/ ${Number(n).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtDate = (d) => new Date(d + "T12:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" });
+const getCurrentPeriod = () => {
+  const now = new Date();
+  const month = now.toLocaleDateString("es-PE", { month: "long" });
+  const titleMonth = month.charAt(0).toUpperCase() + month.slice(1);
+  return { month, label: `${titleMonth} ${now.getFullYear()}` };
+};
 
 const CustomTip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -301,6 +307,7 @@ export default function GastosPage({ onLogout, onNavigate }) {
   const [toast, setToast]           = useState(null);
   const [activeNav, setActiveNav]   = useState("gastos");
   const PER_PAGE = 8;
+  const currentPeriod = getCurrentPeriod();
 
   const handleNavClick = (id) => {
     setActiveNav(id);
@@ -476,7 +483,7 @@ export default function GastosPage({ onLogout, onNavigate }) {
         <div className="main">
           <header className="header">
             <div className="hd-left">
-              <span className="hd-eye">Gestión financiera · Mayo 2025</span>
+              <span className="hd-eye">Gestión financiera · {currentPeriod.label}</span>
               <span className="hd-title">Mis Gastos</span>
             </div>
             <div className="hd-right">
@@ -497,7 +504,7 @@ export default function GastosPage({ onLogout, onNavigate }) {
                   <span className="sum-badge badge-white">{Math.round((totalMes / presTotal) * 100)}% del ppto.</span>
                 </div>
                 <div className="sum-val">{fmt(totalMes)}</div>
-                <div className="sum-lbl">Total gastado en mayo</div>
+                <div className="sum-lbl">Total gastado en {currentPeriod.month}</div>
                 <div className="prog-row">
                   <div className="prog-track"><div className="prog-fill" style={{ width: `${Math.min((totalMes / presTotal) * 100, 100)}%` }} /></div>
                   <span className="prog-txt">{fmt(presTotal - totalMes)} restante</span>
@@ -645,7 +652,7 @@ export default function GastosPage({ onLogout, onNavigate }) {
                   <div className="card-hd">
                     <div>
                       <div className="card-title">Tendencia</div>
-                      <div className="card-sub">Gastos diarios mayo</div>
+                      <div className="card-sub">Gastos diarios {currentPeriod.month}</div>
                     </div>
                   </div>
                   <ResponsiveContainer width="100%" height={110}>

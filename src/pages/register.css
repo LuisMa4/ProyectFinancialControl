@@ -485,7 +485,7 @@ body:has(.register-page) {
   height: 36px;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 768px) {
   .page:not(.register-page) {
     grid-template-columns: 1fr;
   }

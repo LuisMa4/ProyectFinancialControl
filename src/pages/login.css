@@ -501,7 +501,7 @@ body:has(.page) {
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 768px) {
   .page {
     grid-template-columns: 1fr;
     background: var(--mint);

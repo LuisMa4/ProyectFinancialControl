@@ -622,7 +622,7 @@ export default function MetasPage({ onLogout, onNavigate }) {
         <div className="main">
           <header className="header">
             <div>
-              <div className="hd-eye">Gestión financiera · 2025</div>
+              <div className="hd-eye">Gestión financiera · 2026</div>
               <div className="hd-title">Metas de Ahorro</div>
             </div>
             <div className="hd-right">

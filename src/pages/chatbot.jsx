@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 
 /* ─────────────────────────────────────────
    DATA & CONFIG
@@ -85,29 +85,30 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 
 /* ── LAYOUT ── */
 .app{display:flex;height:100vh;overflow:hidden}
-.chatbot-app{display:flex;width:100%;height:100svh;overflow:hidden;background:var(--mint)}
+.chatbot-app.app{position:fixed;inset:0;display:flex;width:100vw;max-width:none;height:100svh;overflow:hidden;background:var(--mint)}
 
 /* ── SIDEBAR ── */
-.sidebar{width:var(--sw);background:var(--slate);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .3s ease;flex-shrink:0}
+.sidebar{width:var(--sw);background:var(--slate);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50;transition:transform .3s ease;flex-shrink:0}
+.chatbot-app .sidebar{width:240px;min-width:240px;max-width:240px;flex:0 0 240px}
 .sidebar.collapsed{transform:translateX(-100%)}
-.sb-brand{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
-.sb-ico{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--agua-d),var(--agua));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
-.sb-txt{font-family:'DM Serif Display',serif;font-size:21px;color:white;letter-spacing:-.3px}
-.sb-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
-.nav-item{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:9px;font-size:13.5px;color:rgba(255,255,255,.5);cursor:pointer;transition:all .17s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.sb-brand{display:flex;align-items:center;gap:10px;padding:24px 24px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-ico{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--agua-d),var(--agua));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.sb-txt{font-family:'DM Serif Display',serif;font-size:22px;color:white;letter-spacing:-.3px}
+.sb-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;font-size:14px;color:rgba(255,255,255,.55);cursor:pointer;transition:all .18s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
 .nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85)}
 .nav-item.active{background:linear-gradient(135deg,rgba(90,173,165,.35),rgba(126,200,192,.2));color:white;font-weight:500;box-shadow:inset 0 0 0 1px rgba(126,200,192,.22)}
-.sb-footer{padding:14px 10px;border-top:1px solid rgba(255,255,255,.08)}
-.user-chip{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:9px;background:rgba(255,255,255,.06)}
-.user-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--agua-d),var(--agua));display:flex;align-items:center;justify-content:center;font-size:13px;color:white;font-weight:600;flex-shrink:0}
-.user-nm{font-size:12.5px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.user-pl{font-size:10.5px;color:var(--agua-l)}
+.sb-footer{padding:16px 12px;border-top:1px solid rgba(255,255,255,.08)}
+.user-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.06)}
+.user-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--agua-d),var(--agua));display:flex;align-items:center;justify-content:center;font-size:14px;color:white;font-weight:600;flex-shrink:0}
+.user-nm{font-size:13px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-pl{font-size:11px;color:var(--agua-l)}
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99}
 .sb-overlay.show{display:block}
 
 /* ── MAIN ── */
 .main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden}
-.chatbot-app .main{width:calc(100% - var(--sw));height:100svh}
+.chatbot-app .main{margin-left:240px;width:calc(100vw - 240px);height:100svh}
 
 /* ── HEADER ── */
 .header{background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;flex-shrink:0;gap:12px}
@@ -236,14 +237,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   .suggestions-grid{grid-template-columns:repeat(2,1fr)}
 }
 
-@media(max-width:860px){
+@media(max-width:640px){
   .history-panel{display:none}
   .chat-layout{grid-template-columns:1fr}
-  .sidebar{transform:translateX(-100%)}
-  .sidebar.open{transform:translateX(0)}
+  .chatbot-app .sidebar{transform:translateX(-100%)}
+  .chatbot-app .sidebar.open{transform:translateX(0);width:240px;min-width:240px;max-width:240px}
   .hamburger{display:flex}
   .main{margin-left:0}
-  .chatbot-app .main{width:100%}
+  .chatbot-app .main{margin-left:0;width:100vw}
   .suggestions-grid{grid-template-columns:repeat(2,1fr);max-width:100%}
   .messages{padding:16px}
   .input-area{padding:12px 16px}
@@ -333,6 +334,11 @@ const inlineMarkdown = (text) => {
    TIMESTAMP
 ───────────────────────────────────────── */
 const timestamp = () => new Date().toLocaleTimeString("es-PE", { hour:"2-digit", minute:"2-digit" });
+const getCurrentPeriodLabel = () => {
+  const now = new Date();
+  const month = now.toLocaleDateString("es-PE", { month: "long" });
+  return `${month.charAt(0).toUpperCase() + month.slice(1)} ${now.getFullYear()}`;
+};
 
 /* ─────────────────────────────────────────
    COMPONENT
@@ -413,6 +419,7 @@ export default function ChatbotPage({ onNavigate }) {
 
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Buenos días" : now.getHours() < 19 ? "Buenas tardes" : "Buenas noches";
+  const currentPeriodLabel = getCurrentPeriodLabel();
 
   return (
     <>
@@ -473,7 +480,7 @@ export default function ChatbotPage({ onNavigate }) {
             <span className="ctx-item"><span className="ctx-dot"/>{" "}Perfil de Juan</span>
             <span className="ctx-item">💰 Saldo S/ 1,700</span>
             <span className="ctx-item">🎯 4 metas activas</span>
-            <span className="ctx-item">📅 Mayo 2025</span>
+            <span className="ctx-item">📅 {currentPeriodLabel}</span>
           </div>
 
           <div className={`chat-layout${showHistory ? "" : " no-history"}`}>

@@ -45,7 +45,7 @@ body {
 }
 
 /* ── SIDEBAR ── */
-.sidebar {
+.dashboard-app .sidebar {
   width: var(--sidebar-w);
   background: var(--slate);
   display: flex; flex-direction: column;
@@ -107,7 +107,7 @@ body {
 .logout-btn:hover { color:rgba(255,255,255,0.7); }
 
 /* ── MAIN ── */
-.main {
+.dashboard-app .main {
   margin-left: var(--sidebar-w);
   flex:1;
   width:calc(100% - var(--sidebar-w));
@@ -118,7 +118,7 @@ body {
 }
 
 /* ── HEADER ── */
-.header {
+.dashboard-app .header {
   height: var(--header-h);
   background: var(--white);
   border-bottom: 1px solid var(--border);
@@ -397,9 +397,9 @@ body {
   .dashboard-app .bottom-row .card:first-child{ grid-column:1 / -1; }
 }
 @media(max-width:768px){
-  :root{ --sidebar-w:0px; }
-  .sidebar{ transform:translateX(-240px); }
-  .sidebar.open{ transform:translateX(0); width:240px; }
+  .dashboard-app{ --sidebar-w:0px; }
+  .dashboard-app .sidebar{ transform:translateX(-240px); }
+  .dashboard-app .sidebar.open{ transform:translateX(0); width:240px; }
   .dashboard-app .main{ margin-left:0; width:100%; }
   .dashboard-app .header{
     height:auto;

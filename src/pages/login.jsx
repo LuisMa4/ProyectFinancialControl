@@ -50,7 +50,7 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
           <span>✓</span> {toast}
         </div>
       )}
-      <div className="page">
+      <div className="page login-page">
         <div className="left-panel">
           <div className="brand">
             <div className="brand-icon">💎</div>
