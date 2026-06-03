@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import CreateEvent from "../components/CreateEvent.jsx";
+import SidebarCards from "../components/SidebarCards";
 
 /* ─────────────────────────────────────────
    DATA
@@ -602,7 +603,7 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false }
         <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="sb-brand">
             <div className="sb-ico">💎</div>
-            <span className="sb-txt">FinVerde</span>
+            <span className="sb-txt">Savia</span>
           </div>
           <nav className="sb-nav">
             {NAV_ITEMS.map(item => (
@@ -612,6 +613,7 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false }
                 {item.label}
               </button>
             ))}
+            <SidebarCards />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">

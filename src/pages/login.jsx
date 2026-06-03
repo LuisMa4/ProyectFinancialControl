@@ -54,7 +54,7 @@ export default function LoginPage({ onRegister, onLoginSuccess, onGuest }) {
         <div className="left-panel">
           <div className="brand">
             <div className="brand-icon">💎</div>
-            <span className="brand-name">FinVerde</span>
+            <span className="brand-name">Savia</span>
           </div>
 
           <div className="hero-content">

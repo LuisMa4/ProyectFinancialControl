@@ -3,6 +3,8 @@
 /* ─────────────────────────────────────────
    DATA & CONFIG
 ───────────────────────────────────────── */
+import SidebarCards from "../components/SidebarCards";
+
 const NAV_ITEMS = [
   { id:"dashboard",  label:"Dashboard",  icon:"◉" },
   { id:"gastos",     label:"Gastos",     icon:"💳" },
@@ -13,7 +15,7 @@ const NAV_ITEMS = [
 ];
 
 const CONTEXTO_FINANCIERO = `
-Eres Fina, la asistente financiera personal de FinVerde, una aplicación de gestión de finanzas personales.
+Eres Fina, la asistente financiera personal de Savia, una aplicación de gestión de finanzas personales.
 Tu rol es ayudar al usuario a entender sus finanzas, dar consejos personalizados y responder preguntas sobre su situación económica.
 
 DATOS DEL USUARIO (Juan Pérez, Lima, Perú):
@@ -68,7 +70,7 @@ const SUGERENCIAS_EMPTY = [
 ];
 
 const CONTEXTO_CUENTA_NUEVA = `
-Eres Fina, la asistente financiera personal de FinVerde.
+Eres Fina, la asistente financiera personal de Savia.
 El usuario acaba de iniciar una cuenta nueva y todavía no tiene gastos, metas ni eventos registrados.
 Ayúdalo a empezar desde cero: sugiere primeros pasos, categorías iniciales, presupuestos realistas y metas de ahorro.
 No inventes datos financieros personales. Si necesitas cifras, pide al usuario sus ingresos, gastos fijos o prioridades.
@@ -444,7 +446,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
         <aside className={`sidebar${sidebarOpen?" open":""}`}>
           <div className="sb-brand">
             <div className="sb-ico">💎</div>
-            <span className="sb-txt">FinVerde</span>
+            <span className="sb-txt">Savia</span>
           </div>
           <nav className="sb-nav">
             {NAV_ITEMS.map(item => (
@@ -454,6 +456,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
                 {item.label}
               </button>
             ))}
+            <SidebarCards />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
@@ -475,7 +478,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
               <div style={{width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,var(--agua-d),var(--agua))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>🤖</div>
               <div className="hd-titles">
                 <div className="hd-eye">Asistente financiero con IA</div>
-                <div className="hd-title">Fina · FinVerde IA</div>
+                <div className="hd-title">Fina · Savia IA</div>
               </div>
             </div>
             <div className="hd-right">
@@ -523,7 +526,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
                     <div className="welcome-avatar">🤖</div>
                     <h2 className="welcome-title">{greeting}, {firstName} 👋</h2>
                     <p className="welcome-sub">
-                      Soy <strong>Fina</strong>, tu asistente financiera personal. Tengo acceso a tus datos de FinVerde y puedo ayudarte a entender tus finanzas, optimizar tus ahorros y tomar mejores decisiones de dinero.
+                      Soy <strong>Fina</strong>, tu asistente financiera personal. Tengo acceso a tus datos de Savia y puedo ayudarte a entender tus finanzas, optimizar tus ahorros y tomar mejores decisiones de dinero.
                     </p>
                     <div className="suggestions-grid">
                       {suggestions.map(s => (

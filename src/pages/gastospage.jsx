@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, LineChart, Line
 } from "recharts";
+import SidebarCards from "../components/SidebarCards";
 
 /* ─────────────────────────────────────────
    MOCK DATA
@@ -469,7 +470,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
         <aside className="sidebar">
           <div className="sb-brand">
             <div className="sb-ico">💎</div>
-            <span className="sb-txt">FinVerde</span>
+            <span className="sb-txt">Savia</span>
           </div>
           <nav className="sb-nav">
             {NAV_ITEMS.map(item => (
@@ -479,6 +480,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
                 {item.label}
               </button>
             ))}
+            <SidebarCards />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">

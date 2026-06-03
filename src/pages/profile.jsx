@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SidebarCards from "../components/SidebarCards";
 
 /* ─────────────────────────────────────────
    MOCK DATA
@@ -581,7 +582,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
         <aside className="sidebar">
           <div className="sb-brand">
             <div className="sb-ico">💎</div>
-            <span className="sb-txt">FinVerde</span>
+            <span className="sb-txt">Savia</span>
           </div>
           <nav className="sb-nav">
             {NAV_ITEMS.map(item => (
@@ -591,6 +592,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
                 {item.label}
               </button>
             ))}
+            <SidebarCards />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
@@ -836,7 +838,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
                   <div className="card-hd">
                     <div>
                       <div className="card-title">Resumen</div>
-                      <div className="card-sub">Tu actividad en FinVerde</div>
+                      <div className="card-sub">Tu actividad en Savia</div>
                     </div>
                   </div>
                   <div className="card-body">

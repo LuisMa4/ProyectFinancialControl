@@ -3,6 +3,8 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import SidebarCards from "../components/SidebarCards";
+import { readStoredCards, writeStoredCards } from "../utils/cardsStorage";
 import "./mainpage.css";
 
 const GASTOS_MES = [
@@ -93,6 +95,13 @@ const NAV_ITEMS = [
 
 const TIPO_CAMBIO = { USD: 3.74, EUR: 4.05, BTC: 0.000011 };
 
+const CARD_FORM_DEF = {
+  titular: "",
+  numero: "",
+  vencimiento: "",
+  alias: "",
+};
+
 const getTodayLabel = () => {
   const today = new Date();
   return today.toLocaleDateString("es-PE", {
@@ -164,6 +173,46 @@ const getGoalsTrend = (goals) => {
 
 const sumPeriod = (data, key) => data.reduce((total, item) => total + Number(item[key] || 0), 0);
 
+const onlyDigits = (value) => value.replace(/\D/g, "");
+
+const formatCardInput = (value) => {
+  const digits = onlyDigits(value).slice(0, 16);
+  return digits.replace(/(.{4})/g, "$1 ").trim();
+};
+
+const formatExpiryInput = (value) => {
+  const digits = onlyDigits(value).slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+};
+
+const maskCardNumber = (value) => {
+  const digits = onlyDigits(value);
+  return digits ? `**** **** **** ${digits.slice(-4)}` : "**** **** **** ----";
+};
+
+const getCardLastDigits = (value) => {
+  const digits = onlyDigits(value);
+  return digits.slice(-4);
+};
+
+const getCardBrand = (value) => {
+  const digits = onlyDigits(value);
+  const firstTwo = Number(digits.slice(0, 2));
+  const firstFour = Number(digits.slice(0, 4));
+
+  if (!digits) return { name: "Tarjeta", icon: "💳", className: "generic" };
+  if (digits.startsWith("4")) return { name: "Visa", icon: "V", className: "visa" };
+  if ((firstTwo >= 51 && firstTwo <= 55) || (firstFour >= 2221 && firstFour <= 2720)) {
+    return { name: "Mastercard", icon: "MC", className: "mastercard" };
+  }
+  if (digits.startsWith("34") || digits.startsWith("37")) return { name: "American Express", icon: "AX", className: "amex" };
+  if (digits.startsWith("36") || digits.startsWith("38") || digits.startsWith("39")) return { name: "Diners Club", icon: "DC", className: "diners" };
+  if (digits.startsWith("6011") || digits.startsWith("65")) return { name: "Discover", icon: "DS", className: "discover" };
+
+  return { name: "Tarjeta bancaria", icon: "💳", className: "generic" };
+};
+
 const scaleCategories = (categories, total) => {
   const baseTotal = categories.reduce((sum, category) => sum + category.value, 0);
 
@@ -196,6 +245,11 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
   const [periodo, setPeriodo] = useState("Mes");
   const [showAlert, setShowAlert] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cards, setCards] = useState(readStoredCards);
+  const [cardModalStep, setCardModalStep] = useState(null);
+  const [cardForm, setCardForm] = useState(CARD_FORM_DEF);
+  const [cardErrors, setCardErrors] = useState({});
+  const [pendingCard, setPendingCard] = useState(null);
 
   const activePeriod = PERIOD_DATA[periodo];
   const periodData = isGuest ? activePeriod.data : [];
@@ -219,6 +273,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
   const firstName = isGuest ? "Juan" : "Cuenta";
   const avatar = isGuest ? "JP" : "CN";
   const planLabel = isGuest ? "⭐ Premium" : "Plan gratuito";
+  const currentCardBrand = getCardBrand(cardForm.numero);
 
   const handleNavClick = (id) => {
     setActiveNav(id);
@@ -226,12 +281,197 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
     if (onNavigate) onNavigate(id);
   };
 
+  const openCardsModal = () => {
+    setCardErrors({});
+    setCardForm(CARD_FORM_DEF);
+    setPendingCard(null);
+    setCardModalStep("list");
+  };
+
+  const closeCardsModal = () => {
+    setCardModalStep(null);
+    setCardErrors({});
+    setPendingCard(null);
+  };
+
+  const startAddCard = () => {
+    setCardForm(CARD_FORM_DEF);
+    setCardErrors({});
+    setCardModalStep("form");
+  };
+
+  const handleCardField = (field, value) => {
+    const nextValue =
+      field === "numero" ? formatCardInput(value) :
+      field === "vencimiento" ? formatExpiryInput(value) :
+      value;
+
+    setCardForm((prev) => ({ ...prev, [field]: nextValue }));
+    setCardErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  const verifyCard = (event) => {
+    event.preventDefault();
+    const digits = onlyDigits(cardForm.numero);
+    const errors = {};
+    const detectedBrand = getCardBrand(cardForm.numero);
+
+    if (!cardForm.titular.trim()) errors.titular = "Escribe el titular de la tarjeta.";
+    if (digits.length < 13) errors.numero = "El número debe tener al menos 13 dígitos.";
+    if (!/^\d{2}\/\d{2}$/.test(cardForm.vencimiento)) errors.vencimiento = "Usa el formato MM/AA.";
+    if (!cardForm.alias.trim()) errors.alias = "Agrega un alias para reconocerla.";
+
+    if (Object.keys(errors).length) {
+      setCardErrors(errors);
+      return;
+    }
+
+    const verifiedCard = {
+      id: Date.now(),
+      alias: cardForm.alias.trim(),
+      titular: cardForm.titular.trim(),
+      numero: maskCardNumber(cardForm.numero),
+      ultimos: getCardLastDigits(cardForm.numero),
+      marca: detectedBrand.name,
+      marcaClass: detectedBrand.className,
+      marcaIcon: detectedBrand.icon,
+      vencimiento: cardForm.vencimiento,
+      estado: "Verificada",
+    };
+
+    setCards((prev) => {
+      const nextCards = [verifiedCard, ...prev];
+      writeStoredCards(nextCards);
+      return nextCards;
+    });
+    setPendingCard(verifiedCard);
+    setCardModalStep("sync");
+  };
+
+  const cancelSync = () => {
+    setCardModalStep("list");
+    setPendingCard(null);
+  };
+
+  const acceptSync = () => {
+    setCardModalStep("soon");
+  };
+
   return (
     <div className="app dashboard-app">
+      {cardModalStep && (
+        <div className="card-modal-overlay" onClick={e => e.target === e.currentTarget && closeCardsModal()}>
+          <div className="card-modal">
+            <div className="card-modal-hd">
+              <div>
+                <h2 className="card-modal-title">
+                  {cardModalStep === "form" ? "Agregar tarjeta" : cardModalStep === "sync" ? "Sincronizar pagos" : cardModalStep === "soon" ? "Próximamente" : "Mis tarjetas"}
+                </h2>
+                <p className="card-modal-sub">
+                  {cardModalStep === "list" ? "Tarjetas disponibles para registrar pagos." : cardModalStep === "form" ? "Completa los datos para verificarla localmente." : "Tu tarjeta ya quedó agregada."}
+                </p>
+              </div>
+              <button className="card-modal-close" onClick={closeCardsModal}>✕</button>
+            </div>
+
+            {cardModalStep === "list" && (
+              <>
+                <div className="cards-wallet">
+                  {cards.length === 0 ? (
+                    <div className="cards-empty">
+                      <div className="cards-empty-ico">💳</div>
+                      <div className="cards-empty-title">Aún no tienes tarjetas</div>
+                      <div className="cards-empty-text">Agrega una tarjeta para que luego pueda asociarse a tus pagos registrados.</div>
+                    </div>
+                  ) : (
+                    cards.map((card) => (
+                      <div className="saved-card" key={card.id}>
+                        <div>
+                          <div className="saved-card-bank">{card.marca}</div>
+                          <div className="saved-card-number">{card.numero}</div>
+                          <div className="saved-card-owner">{card.alias} · {card.titular}</div>
+                        </div>
+                        <div className="saved-card-state">{card.estado}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="card-modal-foot">
+                  <button className="btn-save-card" onClick={startAddCard}>+ Agregar tarjeta</button>
+                  <button className="btn-cancel-card" onClick={closeCardsModal}>Cerrar</button>
+                </div>
+              </>
+            )}
+
+            {cardModalStep === "form" && (
+              <form onSubmit={verifyCard}>
+                <div className="card-form-grid">
+                  <label className="card-field full">
+                    <span>Titular</span>
+                    <input value={cardForm.titular} onChange={(e) => handleCardField("titular", e.target.value)} placeholder="Nombre como figura en la tarjeta" />
+                    {cardErrors.titular && <small>{cardErrors.titular}</small>}
+                  </label>
+                  <label className="card-field full">
+                    <span>Número de tarjeta</span>
+                    <input inputMode="numeric" value={cardForm.numero} onChange={(e) => handleCardField("numero", e.target.value)} placeholder="0000 0000 0000 0000" />
+                    <div className={`card-brand-hint ${currentCardBrand.className}`}>
+                      <span className="card-brand-mark">{currentCardBrand.icon}</span>
+                      <span>{onlyDigits(cardForm.numero) ? `Reconocida como ${currentCardBrand.name}` : "Se reconocerá al escribir el número"}</span>
+                    </div>
+                    {cardErrors.numero && <small>{cardErrors.numero}</small>}
+                  </label>
+                  <label className="card-field">
+                    <span>Vencimiento</span>
+                    <input inputMode="numeric" value={cardForm.vencimiento} onChange={(e) => handleCardField("vencimiento", e.target.value)} placeholder="MM/AA" />
+                    {cardErrors.vencimiento && <small>{cardErrors.vencimiento}</small>}
+                  </label>
+                  <label className="card-field full">
+                    <span>Alias</span>
+                    <input value={cardForm.alias} onChange={(e) => handleCardField("alias", e.target.value)} placeholder="Ej: Tarjeta principal" />
+                    {cardErrors.alias && <small>{cardErrors.alias}</small>}
+                  </label>
+                </div>
+                <div className="card-modal-foot">
+                  <button type="submit" className="btn-save-card">Verificar tarjeta</button>
+                  <button type="button" className="btn-cancel-card" onClick={() => setCardModalStep("list")}>Cancelar</button>
+                </div>
+              </form>
+            )}
+
+            {cardModalStep === "sync" && pendingCard && (
+              <>
+                <div className="sync-box">
+                  <div className="sync-ico">✓</div>
+                  <div className="sync-title">{pendingCard.alias} fue agregada</div>
+                  <div className="sync-text">¿Deseas sincronizar pagos de esta tarjeta cuando la integración esté disponible?</div>
+                </div>
+                <div className="card-modal-foot">
+                  <button className="btn-save-card" onClick={acceptSync}>Aceptar</button>
+                  <button className="btn-cancel-card" onClick={cancelSync}>Cancelar</button>
+                </div>
+              </>
+            )}
+
+            {cardModalStep === "soon" && (
+              <>
+                <div className="sync-box">
+                  <div className="sync-ico soon">⏳</div>
+                  <div className="sync-title">Próximamente</div>
+                  <div className="sync-text">La sincronización automática de pagos se activará cuando estén listas las APIs.</div>
+                </div>
+                <div className="card-modal-foot">
+                  <button className="btn-save-card" onClick={cancelSync}>Ver tarjetas</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
         <div className="sidebar-brand">
           <div className="brand-ico">💎</div>
-          <span className="brand-txt">FinVerde</span>
+          <span className="brand-txt">Savia</span>
         </div>
 
         <nav className="sidebar-nav">
@@ -245,6 +485,8 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
               {item.label}
             </button>
           ))}
+
+          <SidebarCards onManage={openCardsModal} />
         </nav>
 
         <div className="sidebar-footer">

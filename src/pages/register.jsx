@@ -95,7 +95,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
               <div className="success-icon">✓</div>
               <h2 className="success-title">¡Cuenta creada!</h2>
               <p className="success-sub">
-                Bienvenido a <strong>FinVerde</strong>. Tu cuenta ha sido registrada exitosamente.
+                Bienvenido a <strong>Savia</strong>. Tu cuenta ha sido registrada exitosamente.
                 Ahora puedes comenzar a gestionar tus finanzas personales.
               </p>
               <button className="btn-go" onClick={onRegisterSuccess}>Ir al panel principal →</button>
@@ -126,7 +126,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
             </h2>
             <p className="form-subtitle">
               {step === 0 && "Ingresa tus credenciales de acceso"}
-              {step === 1 && "Personaliza tu experiencia en FinVerde"}
+              {step === 1 && "Personaliza tu experiencia en Savia"}
               {step === 2 && "Selecciona el plan que mejor se adapte a ti"}
             </p>
           </div>
@@ -336,7 +336,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                 />
                 <label htmlFor="terms" className="terms-text">
                   He leído y acepto los <a href="#" className="terms-link">Términos de servicio</a> y la{" "}
-                  <a href="#" className="terms-link">Política de privacidad</a> de FinVerde.
+                  <a href="#" className="terms-link">Política de privacidad</a> de Savia.
                 </label>
               </div>
               {errors.terms && <div className="error-msg" style={{marginBottom:12}}>⚠ {errors.terms}</div>}
@@ -372,7 +372,7 @@ function LeftContent() {
     <>
       <div className="brand">
         <div className="brand-icon">💎</div>
-        <span className="brand-name">FinVerde</span>
+        <span className="brand-name">Savia</span>
       </div>
 
       <div className="hero-content">
@@ -384,7 +384,7 @@ function LeftContent() {
           Empieza hoy tu<br /><em>camino</em><br />financiero.
         </h1>
         <p className="hero-sub">
-          Únete a FinVerde y toma el control de tus gastos, metas de ahorro y finanzas personales desde el primer día.
+          Únete a Savia y toma el control de tus gastos, metas de ahorro y finanzas personales desde el primer día.
         </p>
       </div>
 
@@ -405,7 +405,7 @@ function LeftContent() {
         ))}
       </div>
 
-      <div className="left-footer">© 2025 FinVerde · Todos los derechos reservados</div>
+      <div className="left-footer">© 2025 Savia · Todos los derechos reservados</div>
     </>
   );
 }

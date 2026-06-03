@@ -1,0 +1,71 @@
+.sidebar-cards {
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,0.08);
+}
+.sidebar-section-hd {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 8px 8px;
+  color:rgba(255,255,255,0.42);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+.sidebar-add-card {
+  width:24px; height:24px;
+  border:none; border-radius:8px;
+  background:rgba(126,200,192,0.16);
+  color:#A8DBD6;
+  cursor:pointer;
+  font-size:16px;
+  line-height:1;
+  transition:all 0.18s;
+}
+.sidebar-add-card:hover { background:rgba(126,200,192,0.28); color:white; }
+.sidebar-empty-card,
+.sidebar-card-item {
+  width:100%;
+  border:none;
+  border-radius:10px;
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px;
+  background:rgba(255,255,255,0.06);
+  color:rgba(255,255,255,0.72);
+  font-family:'DM Sans',sans-serif;
+  cursor:pointer;
+  transition:all 0.18s;
+  text-align:left;
+}
+.sidebar-empty-card:disabled,
+.sidebar-card-item:disabled { cursor:default; }
+.sidebar-empty-card:not(:disabled):hover,
+.sidebar-card-item:not(:disabled):hover { background:rgba(255,255,255,0.1); color:white; }
+.sidebar-empty-ico,
+.sidebar-card-mark {
+  width:30px; height:30px;
+  border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  background:rgba(126,200,192,0.18);
+  color:white;
+  font-size:13px;
+  font-weight:700;
+}
+.sidebar-card-mark.visa { background:#2F6CE5; }
+.sidebar-card-mark.mastercard { background:#D95A5A; font-size:10px; }
+.sidebar-card-mark.amex { background:#4A8F86; font-size:10px; }
+.sidebar-card-mark.diners,
+.sidebar-card-mark.discover,
+.sidebar-card-mark.generic { background:rgba(126,200,192,0.22); font-size:12px; }
+.sidebar-card-list { display:flex; flex-direction:column; gap:7px; }
+.sidebar-card-info { display:flex; flex-direction:column; min-width:0; }
+.sidebar-card-name {
+  font-size:12px;
+  font-weight:600;
+  color:white;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sidebar-card-num { font-size:11px; color:rgba(255,255,255,0.45); margin-top:1px; }
