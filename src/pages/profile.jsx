@@ -889,7 +889,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
                         </div>
                       ))}
                     </div>
-                    <button className="btn-upgrade" onClick={() => showToast("Redirigiendo a planes…")}>
+                    <button className="btn-upgrade" onClick={() => handleNavClick("planes")}>
                       🔄 Gestionar suscripción
                     </button>
                   </div>

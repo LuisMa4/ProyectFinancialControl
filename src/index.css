@@ -66,6 +66,14 @@ body {
   box-sizing: border-box;
 }
 
+#root:has(.planes-app) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  text-align: left;
+}
+
 h1,
 h2 {
   font-family: var(--heading);

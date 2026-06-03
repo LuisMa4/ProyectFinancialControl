@@ -7,6 +7,7 @@ import MetasPage from './pages/metaspage.jsx';
 import PerfilPage from './pages/profile.jsx';
 import CalendarioPage from './pages/calendar.jsx';
 import ChatbotPage from './pages/chatbot.jsx';
+import PlanesPage from './pages/planespage.jsx';
 
 const PAGE_STORAGE_KEY = 'finverde-current-page';
 const SESSION_STORAGE_KEY = 'finverde-session-active';
@@ -21,6 +22,7 @@ const VALID_PAGES = new Set([
   'metas',
   'calendario',
   'chatbot',
+  'planes',
   'perfil',
 ]);
 const PRIVATE_PAGES = new Set([
@@ -30,6 +32,7 @@ const PRIVATE_PAGES = new Set([
   'metas',
   'calendario',
   'chatbot',
+  'planes',
   'perfil',
 ]);
 
@@ -113,6 +116,7 @@ export default function App() {
       {currentPage === 'metas' && <MetasPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
       {currentPage === 'calendario' && <CalendarioPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
       {currentPage === 'chatbot' && <ChatbotPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
+      {currentPage === 'planes' && <PlanesPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
       {currentPage === 'perfil' && <PerfilPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} registeredAt={registeredAt} />}
     </>
   );
