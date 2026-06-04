@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { RadialBarChart, RadialBar, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
+import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import SidebarCards from "../components/SidebarCards";
 
 /* ─────────────────────────────────────────
@@ -150,7 +150,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .cards-grid.list-view{grid-template-columns:1fr}
 
 /* META CARD */
-.meta-card{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:box-shadow .2s,transform .2s;animation:fadeUp .4s ease both;cursor:pointer;min-width:0}
+.meta-card{position:relative;background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:box-shadow .2s,transform .2s;animation:fadeUp .4s ease both;cursor:pointer;min-width:0}
 .meta-card:hover{box-shadow:0 6px 28px rgba(90,173,165,.13);transform:translateY(-2px)}
 .meta-card.done-card{opacity:.85}
 
@@ -163,6 +163,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .mc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .prio-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:100px;letter-spacing:.3px;text-transform:uppercase}
 .done-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:100px;background:#E8F7F0;color:var(--green)}
+.shared-badge{font-size:10px;font-weight:700;padding:4px 9px;border-radius:100px;background:#EEF8F7;color:var(--agua-d);border:1px solid var(--agua-p);display:flex;align-items:center;gap:4px}
+.shared-flag{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--agua-d),var(--agua));color:white;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 5px 16px rgba(90,173,165,.28);z-index:2}
 
 .mc-body{padding:18px 22px}
 .mc-ring-row{display:flex;align-items:center;gap:16px;margin-bottom:14px}
@@ -212,6 +214,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .color-opt.sel{border-color:var(--slate);transform:scale(1.15)}
 .prio-grid{display:flex;gap:8px}
 .prio-opt{flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;font-size:12px;font-weight:500;text-align:center;transition:all .15s;background:none;font-family:'DM Sans',sans-serif}
+.share-toggle{display:flex;align-items:flex-start;gap:11px;padding:14px;border:1.5px solid var(--border);border-radius:12px;background:var(--mint);cursor:pointer}
+.share-toggle input{margin-top:3px;accent-color:var(--agua-d)}
+.share-title{font-size:13px;font-weight:600;color:var(--slate)}
+.share-hint{font-size:12px;color:var(--muted);line-height:1.4;margin-top:2px}
+.share-preview{margin-top:8px;padding:9px 11px;border-radius:9px;background:var(--white);border:1px solid var(--border);font-size:11px;color:var(--slate-m);word-break:break-all}
 .mf{display:flex;gap:10px;margin-top:24px}
 .btn-cancel{flex:1;padding:12px;background:none;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;transition:all .18s}
 .btn-cancel:hover{background:var(--mint);border-color:var(--agua-l)}
@@ -232,6 +239,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .hist-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--mint);border-radius:8px;font-size:13px}
 .hist-mes{color:var(--slate-m)}
 .hist-val{font-weight:500;color:var(--agua-d)}
+.share-box{margin-bottom:20px;background:var(--mint);border:1px solid var(--border);border-radius:12px;padding:14px}
+.share-box-title{font-size:13px;font-weight:700;color:var(--slate);display:flex;align-items:center;gap:6px}
+.share-box-text{font-size:12px;color:var(--muted);line-height:1.45;margin-top:4px}
+.share-link-row{display:flex;gap:8px;margin-top:10px}
+.share-link{flex:1;min-width:0;background:var(--white);border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:11px;color:var(--slate-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.share-copy{border:none;border-radius:9px;background:linear-gradient(135deg,var(--agua-d),var(--agua));color:white;padding:0 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
 
 /* TOAST */
 .metas-toast{position:fixed;bottom:28px;right:28px;width:max-content;max-width:min(360px,calc(100vw - 32px));background:var(--slate);color:white;padding:13px 20px;border-radius:12px;font-size:13px;line-height:1.35;display:flex;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(45,74,71,.25);animation:slideUp .3s ease;z-index:300}
@@ -288,6 +301,8 @@ const mesesRestantes = (fechaLimite) => {
 
 const fmtFecha = (f) => new Date(f + "T12:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" });
 
+const makeShareLink = (id) => `${window.location.origin}${window.location.pathname}?metaCompartida=${id}`;
+
 const ICONS = ["✈️","🛡️","💻","🚗","🎓","🏠","💍","📱","🏖️","🎸","🐶","👶","🏋️","🌍","💊","🎮"];
 const COLORS = ["#7EC8C0","#5AADA5","#C9A96E","#8AADA9","#A8DBD6","#4A706C","#E07070","#4CAF7D","#7B9DD4","#D4A0C8"];
 
@@ -330,7 +345,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
   const [editMeta, setEditMeta]       = useState(null); // meta id
 
   // Form nueva/editar
-  const FORM_DEF = { nombre: "", icon: "🎯", color: "#7EC8C0", meta: "", actual: "", aporteMensual: "", fechaLimite: "", prioridad: "media", descripcion: "" };
+  const FORM_DEF = { nombre: "", icon: "🎯", color: "#7EC8C0", meta: "", actual: "", aporteMensual: "", fechaLimite: "", prioridad: "media", descripcion: "", compartida: false, shareLink: "" };
   const [form, setForm] = useState(FORM_DEF);
 
   // Abono
@@ -342,6 +357,15 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
   };
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  const copyShareLink = async (link) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast("✓ Link copiado");
+    } catch {
+      showToast("Copia este link manualmente");
+    }
+  };
 
   const metasFiltradas = useMemo(() => {
     if (filtro === "activas")    return metas.filter(m => m.actual < m.meta);
@@ -358,19 +382,27 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
 
   const openNueva = () => { setForm(FORM_DEF); setEditMeta(null); setModalNueva(true); };
   const openEditar = (m) => {
-    setForm({ nombre: m.nombre, icon: m.icon, color: m.color, meta: String(m.meta), actual: String(m.actual), aporteMensual: String(m.aporteMensual), fechaLimite: m.fechaLimite, prioridad: m.prioridad, descripcion: m.descripcion });
+    setForm({ nombre: m.nombre, icon: m.icon, color: m.color, meta: String(m.meta), actual: String(m.actual), aporteMensual: String(m.aporteMensual), fechaLimite: m.fechaLimite, prioridad: m.prioridad, descripcion: m.descripcion, compartida: Boolean(m.compartida), shareLink: m.shareLink || "" });
     setEditMeta(m.id);
     setModalNueva(true);
   };
 
   const guardarMeta = () => {
     if (!form.nombre.trim() || !form.meta || isNaN(+form.meta)) { showToast("⚠ Completa nombre y monto"); return; }
-    const entry = { ...form, meta: +form.meta, actual: +form.actual || 0, aporteMensual: +form.aporteMensual || 0 };
+    const nextId = editMeta || Date.now();
+    const entry = {
+      ...form,
+      meta: +form.meta,
+      actual: +form.actual || 0,
+      aporteMensual: +form.aporteMensual || 0,
+      compartida: Boolean(form.compartida),
+      shareLink: form.compartida ? (form.shareLink || makeShareLink(nextId)) : "",
+    };
     if (editMeta) {
       setMetas(prev => prev.map(m => m.id === editMeta ? { ...m, ...entry } : m));
       showToast("✓ Meta actualizada");
     } else {
-      setMetas(prev => [...prev, { id: Date.now(), ...entry, historial: [] }]);
+      setMetas(prev => [...prev, { id: nextId, ...entry, historial: [] }]);
       showToast("✓ Meta creada");
     }
     setModalNueva(false);
@@ -474,6 +506,23 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
               <input className="fi" placeholder="¿Para qué es esta meta?" value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} />
             </div>
 
+            <label className="share-toggle" style={{ marginTop: 16 }}>
+              <input
+                type="checkbox"
+                checked={form.compartida}
+                onChange={e => setForm(p => ({ ...p, compartida: e.target.checked, shareLink: e.target.checked ? p.shareLink : "" }))}
+              />
+              <div>
+                <div className="share-title">Meta compartida</div>
+                <div className="share-hint">Genera un link para compartir esta meta con amigos o familiares.</div>
+                {form.compartida && (
+                  <div className="share-preview">
+                    {form.shareLink || "El link se generará al guardar la meta."}
+                  </div>
+                )}
+              </div>
+            </label>
+
             <div className="mf">
               <button className="btn-cancel" onClick={() => setModalNueva(false)}>Cancelar</button>
               <button className="btn-save" onClick={guardarMeta}>{editMeta ? "Guardar cambios" : "Crear meta"} →</button>
@@ -554,6 +603,17 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
                 </div>
               ))}
             </div>
+
+            {metaDetalle.compartida && (
+              <div className="share-box">
+                <div className="share-box-title">🔗 Meta compartida</div>
+                <div className="share-box-text">Pasa este link a tus amigos o familiares para compartir esta meta.</div>
+                <div className="share-link-row">
+                  <div className="share-link">{metaDetalle.shareLink || makeShareLink(metaDetalle.id)}</div>
+                  <button className="share-copy" onClick={() => copyShareLink(metaDetalle.shareLink || makeShareLink(metaDetalle.id))}>Copiar</button>
+                </div>
+              </div>
+            )}
 
             {/* Historial aportes */}
             <div style={{ marginBottom: 20 }}>
@@ -700,6 +760,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
                     <div key={m.id} className={`meta-card${done ? " done-card" : ""}`}
                       style={{ animationDelay: `${.22 + idx * .06}s` }}
                       onClick={() => setModalDetalle(m.id)}>
+                      {m.compartida && <div className="shared-flag" title="Meta compartida">🔗</div>}
 
                       <div className="mc-header">
                         <div className="mc-left">
@@ -710,6 +771,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
                           </div>
                         </div>
                         <div className="mc-right">
+                          {m.compartida && <span className="shared-badge">🔗 Compartida</span>}
                           {done
                             ? <span className="done-badge">✓ Completada</span>
                             : <span className="prio-badge" style={{ background: prio.bg, color: prio.color }}>{prio.label}</span>
