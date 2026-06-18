@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { registerAccount, writeAuthToken } from "../utils/authStorage";
 import "./register.css";
 
 const STEPS = ["Cuenta", "Perfil", "Plan"];
@@ -24,6 +25,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [authData, setAuthData] = useState(null);
 
   // Step 0 — Cuenta
   const [email, setEmail]       = useState("");
@@ -72,11 +74,25 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
     if (Object.keys(e).length) { setErrors(e); return; }
     setErrors({});
     if (step < 2) { setStep(s => s + 1); return; }
-    // Submit
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1800));
-    setLoading(false);
-    setDone(true);
+    try {
+      const response = await registerAccount({
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+        currency,
+        plan,
+      });
+      writeAuthToken(response.token);
+      setAuthData(response);
+      setDone(true);
+    } catch (error) {
+      setErrors({ form: error.message || "No se pudo crear la cuenta" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearErr = (field) => {
@@ -98,7 +114,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                 Bienvenido a <strong>Savia</strong>. Tu cuenta ha sido registrada exitosamente.
                 Ahora puedes comenzar a gestionar tus finanzas personales.
               </p>
-              <button className="btn-go" onClick={onRegisterSuccess}>Ir al panel principal →</button>
+              <button className="btn-go" onClick={() => onRegisterSuccess(authData?.user, authData?.token)}>Ir al panel principal →</button>
             </div>
           </div>
         </div>
@@ -130,6 +146,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
               {step === 2 && "Selecciona el plan que mejor se adapte a ti"}
             </p>
           </div>
+          {errors.form && <div className="error-msg" style={{marginTop:12}}>⚠ {errors.form}</div>}
 
           {/* Step indicator */}
           <div className="steps">

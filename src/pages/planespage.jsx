@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SidebarCards from "../components/SidebarCards";
 
 const S = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
@@ -8,6 +9,7 @@ const S = `
   --mint:#EDF8F7;--white:#FAFFFE;--slate:#2D4A47;--slate-m:#4A706C;
   --muted:#8AADA9;--border:#DDE9E7;--gold:#C9A96E;--red:#E07070;--green:#4CAF7D;
   --sw:240px;
+  --page-max:1180px;
 }
 html,body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 
@@ -40,16 +42,16 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--sl
 .hd-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--slate);letter-spacing:-.3px}
 
 /* ── CONTENT ── */
-.content{padding:40px 32px;display:flex;flex-direction:column;align-items:center;gap:48px}
+.content{padding:48px clamp(24px,4vw,64px);display:flex;flex-direction:column;align-items:center;gap:48px;width:100%;max-width:calc(var(--page-max) + 128px);margin:0 auto}
 
 /* ── HERO ── */
-.hero{text-align:center;max-width:580px;animation:fadeUp .4s ease}
+.hero{text-align:center;width:100%;max-width:760px;animation:fadeUp .4s ease}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:6px;background:var(--agua-p);border:1px solid var(--agua-l);border-radius:100px;padding:5px 14px;font-size:12px;font-weight:500;color:var(--agua-d);letter-spacing:.3px;text-transform:uppercase;margin-bottom:18px}
 .hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--agua-d);animation:blink 2s ease infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
-.hero-title{font-family:'DM Serif Display',serif;font-size:44px;color:var(--slate);letter-spacing:-.8px;line-height:1.08;margin-bottom:14px}
+.hero-title{font-family:'DM Serif Display',serif;font-size:clamp(38px,4.2vw,58px);color:var(--slate);letter-spacing:0;line-height:1.05;margin-bottom:14px}
 .hero-title em{font-style:italic;color:var(--agua-d)}
-.hero-sub{font-size:16px;color:var(--muted);font-weight:300;line-height:1.7;max-width:460px;margin:0 auto 28px}
+.hero-sub{font-size:clamp(15px,1.15vw,18px);color:var(--muted);font-weight:300;line-height:1.7;max-width:620px;margin:0 auto 28px}
 
 /* billing toggle */
 .billing-toggle{display:inline-flex;background:var(--white);border:1.5px solid var(--border);border-radius:100px;padding:4px;gap:2px}
@@ -58,7 +60,7 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--sl
 .save-badge{background:var(--gold);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px}
 
 /* ── PLANS GRID ── */
-.plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;width:100%;max-width:820px;animation:fadeUp .4s ease both;animation-delay:.1s}
+.plans-grid{display:grid;grid-template-columns:repeat(2,minmax(320px,1fr));gap:clamp(22px,2.4vw,34px);width:100%;max-width:var(--page-max);animation:fadeUp .4s ease both;animation-delay:.1s;align-items:stretch}
 
 /* ── PLAN CARD ── */
 .plan-card{background:var(--white);border:2px solid var(--border);border-radius:24px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .2s;position:relative}
@@ -116,7 +118,7 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--sl
 .tag-soon{background:#F5F5F5;color:var(--muted)}
 
 /* ── COMPARISON TABLE ── */
-.compare-wrap{width:100%;max-width:820px;animation:fadeUp .4s ease both;animation-delay:.2s}
+.compare-wrap{width:100%;max-width:var(--page-max);animation:fadeUp .4s ease both;animation-delay:.2s}
 .compare-toggle{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;cursor:pointer;font-size:14px;color:var(--muted);font-weight:500;background:none;border:none;font-family:'DM Sans',sans-serif}
 .compare-toggle:hover{color:var(--agua-d)}
 .compare-arrow{transition:transform .3s;font-size:12px}
@@ -137,7 +139,7 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--sl
 .group-header td{background:var(--mint);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;padding:10px 20px}
 
 /* ── FAQ ── */
-.faq-wrap{width:100%;max-width:620px;animation:fadeUp .4s ease both;animation-delay:.3s}
+.faq-wrap{width:100%;max-width:min(760px,var(--page-max));animation:fadeUp .4s ease both;animation-delay:.3s}
 .faq-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--slate);text-align:center;margin-bottom:24px;letter-spacing:-.3px}
 .faq-item{background:var(--white);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden;transition:box-shadow .2s}
 .faq-item.open{box-shadow:0 4px 20px rgba(90,173,165,.1);border-color:var(--agua-l)}
@@ -150,7 +152,7 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--sl
 .faq-item.open .faq-a{max-height:200px;padding:0 20px 18px}
 
 /* ── TRUST STRIP ── */
-.trust-strip{display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap;animation:fadeUp .4s ease both;animation-delay:.35s}
+.trust-strip{display:flex;align-items:center;justify-content:center;gap:clamp(18px,2.5vw,36px);flex-wrap:wrap;width:100%;max-width:var(--page-max);animation:fadeUp .4s ease both;animation-delay:.35s}
 .trust-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 .trust-ico{font-size:18px}
 
@@ -161,26 +163,72 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--sl
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── RESPONSIVE ── */
+@media(min-width:1440px){
+  :root{--page-max:1320px}
+  .content{padding-top:56px;padding-bottom:64px}
+  .plans-grid{grid-template-columns:repeat(2,minmax(420px,1fr))}
+  .plan-header{padding:34px 34px 24px}
+  .plan-header.featured{padding-top:42px}
+  .plan-cta{margin-left:34px;margin-right:34px;width:calc(100% - 68px)}
+  .plan-features{padding:24px 34px 34px}
+}
+@media(min-width:1800px){
+  :root{--page-max:1480px}
+  .content{gap:56px}
+  .hero{max-width:860px}
+}
+@media(max-width:1100px){
+  :root{--page-max:980px}
+  .plans-grid{grid-template-columns:repeat(2,minmax(300px,1fr))}
+}
 @media(max-width:900px){
   .sidebar{transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0)}
   .hamburger{display:flex}
   .main{margin-left:0}
+  .header{padding:0 20px}
   .content{padding:28px 20px;gap:36px}
   .hero-title{font-size:36px}
 }
+@media(max-width:760px){
+  .plans-grid{grid-template-columns:1fr;max-width:520px}
+  .plan-card.featured{order:-1}
+  .compare-wrap,.faq-wrap{max-width:520px}
+}
 @media(max-width:640px){
-  .plans-grid{grid-template-columns:1fr;max-width:420px}
+  .header{height:auto;min-height:60px;padding:12px 14px;align-items:flex-start}
+  .hd-left{width:100%;align-items:flex-start}
+  .hd-eye{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 80px)}
+  .hd-title{font-size:18px;line-height:1.2}
+  .hero{max-width:100%}
+  .hero-eyebrow{font-size:10.5px;padding:5px 10px;max-width:100%;justify-content:center;text-align:center}
+  .plans-grid{max-width:420px;gap:18px}
   .plan-card.featured{order:-1}
   .hero-title{font-size:30px}
   .hero-sub{font-size:14px}
+  .billing-toggle{width:100%;max-width:340px;display:grid;grid-template-columns:1fr 1fr;border-radius:14px}
+  .bt-opt{justify-content:center;padding:9px 10px}
+  .plan-card{border-radius:18px}
+  .plan-header{padding:22px 20px 16px}
+  .plan-header.featured{padding-top:32px}
+  .plan-cta{margin:18px 20px 0;width:calc(100% - 40px);min-height:46px}
+  .plan-trial{padding-left:20px;padding-right:20px;line-height:1.35}
+  .plan-features{padding:18px 20px 22px}
+  .price-amount{font-size:48px}
+  .price-anual-note{line-height:1.35}
+  .compare-table-wrap{overflow-x:auto}
+  .compare-table{min-width:560px}
   .compare-table th,.compare-table td{padding:10px 12px;font-size:12.5px}
-  .content{padding:20px 14px}
+  .content{padding:20px 14px;gap:30px}
   .trust-strip{gap:16px}
+  .toast{left:14px;right:14px;bottom:16px;width:auto;justify-content:center;text-align:center}
 }
 @media(max-width:380px){
-  .billing-toggle{flex-direction:column;border-radius:14px}
+  .billing-toggle{display:flex;flex-direction:column;border-radius:14px}
+  .hero-title{font-size:27px}
+  .plan-name{font-size:22px}
   .price-amount{font-size:46px}
+  .popular-badge{font-size:10px;padding:5px 12px}
 }
 `;
 
@@ -255,7 +303,7 @@ const FAQS = [
   },
 ];
 
-export default function PlanesPage() {
+export default function PlanesPage({ onNavigate, onLogout, isGuest = false }) {
   const [billing, setBilling]       = useState("mensual"); // mensual | anual
   const [activeNav, setActiveNav]   = useState("perfil");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -269,6 +317,8 @@ export default function PlanesPage() {
   const precioMensual = 10;
   const precioAnual   = 8; // por mes
   const precio = billing === "anual" ? precioAnual : precioMensual;
+  const displayName = isGuest ? "Juan Pérez" : "Cuenta nueva";
+  const avatar = isGuest ? "JP" : "CN";
 
   const handleSelect = (plan) => {
     if (plan === "free") {
@@ -280,13 +330,19 @@ export default function PlanesPage() {
     }
   };
 
+  const handleNavClick = (id) => {
+    setActiveNav(id);
+    setSidebarOpen(false);
+    if (onNavigate) onNavigate(id);
+  };
+
   return (
     <>
       <style>{S}</style>
       {toast && <div className="toast">{toast}</div>}
       <div className={`sb-overlay${sidebarOpen ? " show" : ""}`} onClick={() => setSidebarOpen(false)} />
 
-      <div className="app">
+      <div className="app planes-app">
         {/* SIDEBAR */}
         <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="sb-brand">
@@ -296,19 +352,21 @@ export default function PlanesPage() {
           <nav className="sb-nav">
             {NAV_ITEMS.map(item => (
               <button key={item.id} className={`nav-item${activeNav === item.id ? " active" : ""}`}
-                onClick={() => { setActiveNav(item.id); setSidebarOpen(false); }}>
+                onClick={() => handleNavClick(item.id)}>
                 <span style={{ fontSize:15, width:19, textAlign:"center", flexShrink:0 }}>{item.icon}</span>
                 {item.label}
               </button>
             ))}
+            <SidebarCards onManage={() => handleNavClick("dashboard")} />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
-              <div className="user-av">JP</div>
+              <div className="user-av">{avatar}</div>
               <div style={{ flex:1, minWidth:0 }}>
-                <div className="user-nm">Juan Pérez</div>
+                <div className="user-nm">{displayName}</div>
                 <div className="user-pl">{currentPlan === "premium" ? "⭐ Premium" : "Plan Gratuito"}</div>
               </div>
+              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
             </div>
           </div>
         </aside>
@@ -319,7 +377,7 @@ export default function PlanesPage() {
             <div className="hd-left">
               <button className="hamburger" onClick={() => setSidebarOpen(v => !v)}>☰</button>
               <div>
-                <div className="hd-eye">Cuenta · Juan Pérez</div>
+                <div className="hd-eye">Cuenta · {displayName}</div>
                 <div className="hd-title">Planes y Suscripción</div>
               </div>
             </div>

@@ -8,11 +8,9 @@ import PerfilPage from './pages/profile.jsx';
 import CalendarioPage from './pages/calendar.jsx';
 import ChatbotPage from './pages/chatbot.jsx';
 import PlanesPage from './pages/planespage.jsx';
+import { fetchCurrentAccount, logoutAccount, readAuthToken, writeAuthToken } from './utils/authStorage';
 
 const PAGE_STORAGE_KEY = 'finverde-current-page';
-const SESSION_STORAGE_KEY = 'finverde-session-active';
-const SESSION_MODE_KEY = 'finverde-session-mode';
-const REGISTERED_AT_KEY = 'finverde-registered-at';
 const VALID_PAGES = new Set([
   'login',
   'register',
@@ -25,99 +23,89 @@ const VALID_PAGES = new Set([
   'planes',
   'perfil',
 ]);
-const PRIVATE_PAGES = new Set([
-  'mainpage',
-  'dashboard',
-  'gastos',
-  'metas',
-  'calendario',
-  'chatbot',
-  'planes',
-  'perfil',
-]);
-
-const getInitialPage = () => {
-  const hasActiveSession = localStorage.getItem(SESSION_STORAGE_KEY) === 'true';
-  const savedPage = localStorage.getItem(PAGE_STORAGE_KEY);
-
-  if (hasActiveSession && PRIVATE_PAGES.has(savedPage)) {
-    return savedPage;
-  }
-
-  return 'login';
-};
-
-const getInitialSessionMode = () => {
-  const hasActiveSession = localStorage.getItem(SESSION_STORAGE_KEY) === 'true';
-  return localStorage.getItem(SESSION_MODE_KEY) || (hasActiveSession ? 'guest' : null);
-};
-
-const getInitialRegisteredAt = () => localStorage.getItem(REGISTERED_AT_KEY) || null;
-
-const formatRegistrationDate = (date) =>
-  date.toLocaleDateString('es-PE', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState(getInitialPage);
-  const [sessionMode, setSessionMode] = useState(getInitialSessionMode);
-  const [registeredAt, setRegisteredAt] = useState(getInitialRegisteredAt);
-  const isGuest = sessionMode === 'guest';
+  const [currentPage, setCurrentPage] = useState('login');
+  const [account, setAccount] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
 
-  const setSession = (mode) => {
-    localStorage.setItem(SESSION_STORAGE_KEY, 'true');
-    localStorage.setItem(SESSION_MODE_KEY, mode);
-    if (mode === 'user' && !localStorage.getItem(REGISTERED_AT_KEY)) {
-      const today = formatRegistrationDate(new Date());
-      localStorage.setItem(REGISTERED_AT_KEY, today);
-      setRegisteredAt(today);
-    }
-    setSessionMode(mode);
-  };
+  useEffect(() => {
+    const boot = async () => {
+      const token = readAuthToken();
+      if (!token) {
+        setAuthReady(true);
+        return;
+      }
+
+      try {
+        const response = await fetchCurrentAccount(token);
+        setAccount(response.user);
+        const savedPage = localStorage.getItem(PAGE_STORAGE_KEY);
+        setCurrentPage(savedPage && VALID_PAGES.has(savedPage) && savedPage !== 'login' && savedPage !== 'register' ? savedPage : 'mainpage');
+      } catch {
+        writeAuthToken('');
+        localStorage.removeItem(PAGE_STORAGE_KEY);
+        setAccount(null);
+        setCurrentPage('login');
+      } finally {
+        setAuthReady(true);
+      }
+    };
+
+    void boot();
+  }, []);
 
   const changePage = (page) => {
     if (!VALID_PAGES.has(page)) return;
+
+    if (!account && page !== 'login' && page !== 'register') {
+      setCurrentPage('login');
+      return;
+    }
 
     localStorage.setItem(PAGE_STORAGE_KEY, page);
     setCurrentPage(page);
   };
 
   const goToRegister = () => changePage('register');
-  const goToLogin = () => {
-    localStorage.removeItem(SESSION_STORAGE_KEY);
-    localStorage.removeItem(SESSION_MODE_KEY);
+  const goToLogin = async () => {
+    const token = readAuthToken();
+    if (token) {
+      await logoutAccount(token).catch(() => null);
+    }
+    writeAuthToken('');
     localStorage.removeItem(PAGE_STORAGE_KEY);
-    localStorage.removeItem(REGISTERED_AT_KEY);
-    setSessionMode(null);
-    setRegisteredAt(null);
+    setAccount(null);
     setCurrentPage('login');
   };
-  const goToMainpage = (mode = 'user') => {
-    setSession(mode);
-    changePage('mainpage');
+  const goToMainpage = (user, token) => {
+    if (token) writeAuthToken(token);
+    setAccount(user || null);
+    localStorage.setItem(PAGE_STORAGE_KEY, 'mainpage');
+    setCurrentPage('mainpage');
   };
-  const goToGuestSession = () => goToMainpage('guest');
   const navigateToPage = (page) => changePage(page);
+
+  if (!authReady) {
+    return null;
+  }
 
   return (
     <>
-      {currentPage === 'login' && <LoginPage onRegister={goToRegister} onLoginSuccess={() => goToMainpage('user')} onGuest={goToGuestSession} />}
-      {currentPage === 'register' && <RegisterPage onLogin={goToLogin} onRegisterSuccess={() => goToMainpage('user')} />}
-      {currentPage === 'mainpage' && <MainPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
-      {currentPage === 'dashboard' && <MainPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
-      {currentPage === 'gastos' && <GastosPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
-      {currentPage === 'metas' && <MetasPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
-      {currentPage === 'calendario' && <CalendarioPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
-      {currentPage === 'chatbot' && <ChatbotPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
-      {currentPage === 'planes' && <PlanesPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} />}
-      {currentPage === 'perfil' && <PerfilPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isGuest} registeredAt={registeredAt} />}
+      {currentPage === 'login' && <LoginPage onRegister={goToRegister} onLoginSuccess={goToMainpage} />}
+      {currentPage === 'register' && <RegisterPage onLogin={goToLogin} onRegisterSuccess={goToMainpage} />}
+      {currentPage === 'mainpage' && <MainPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
+      {currentPage === 'dashboard' && <MainPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
+      {currentPage === 'gastos' && <GastosPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
+      {currentPage === 'metas' && <MetasPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
+      {currentPage === 'calendario' && <CalendarioPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
+      {currentPage === 'chatbot' && <ChatbotPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
+      {currentPage === 'planes' && <PlanesPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
+      {currentPage === 'perfil' && <PerfilPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} registeredAt={account?.registeredAt || null} />}
     </>
   );
 }

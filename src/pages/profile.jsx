@@ -458,20 +458,6 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
 
   const pwStrength = getPwStrength(pwForm.nueva);
 
-  const renderAvatar = (label, color, size = 88, fontSize = 32) => {
-    const isEmoji = label && label.length <= 2 && /\p{Emoji}/u.test(label);
-    return (
-      <div style={{
-        width: size, height: size, borderRadius: "50%",
-        background: isEmoji ? color : color,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize, fontWeight: 700, color: "white",
-      }}>
-        {isEmoji ? label : label}
-      </div>
-    );
-  };
-
   return (
     <>
       <style>{S}</style>
@@ -592,7 +578,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
                 {item.label}
               </button>
             ))}
-            <SidebarCards />
+            <SidebarCards onManage={() => handleNavClick("dashboard")} />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">

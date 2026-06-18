@@ -1,13 +1,19 @@
-﻿import { useState, useMemo } from "react";
+﻿import { useState, useMemo, useEffect } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Cell, LineChart, Line
 } from "recharts";
 import SidebarCards from "../components/SidebarCards";
+import {
+  EXPENSES_CHANGED_EVENT,
+  loadStoredExpenses,
+  getInitialExpenses,
+  writeStoredExpenses,
+} from "../utils/expensesStorage";
 
-/* ─────────────────────────────────────────
+/* -----------------------------------------
    MOCK DATA
-───────────────────────────────────────── */
+----------------------------------------- */
 const CATEGORIAS_DEF = [
   { id:"alimentacion", name:"Alimentación",    icon:"🍔", color:"#7EC8C0", presupuesto:800  },
   { id:"transporte",   name:"Transporte",       icon:"🚗", color:"#5AADA5", presupuesto:400  },
@@ -42,17 +48,6 @@ const GASTOS_INIT = [
   { id:20, desc:"Gas",                        cat:"otros",        monto:28.00,  fecha:"2025-05-02", nota:"Balón de gas",          recurrente:false },
 ];
 
-const TREND_DATA = [
-  { dia:"1", monto:214 },
-  { dia:"5", monto:178 },
-  { dia:"8", monto:340 },
-  { dia:"12",monto:220 },
-  { dia:"15",monto:195 },
-  { dia:"18",monto:290 },
-  { dia:"21",monto:260 },
-  { dia:"24",monto:185 },
-];
-
 const NAV_ITEMS = [
   { id:"dashboard",  label:"Dashboard",  icon:"◉" },
   { id:"gastos",     label:"Gastos",     icon:"💳" },
@@ -62,9 +57,9 @@ const NAV_ITEMS = [
   { id:"perfil",     label:"Mi Perfil",  icon:"👤" },
 ];
 
-/* ─────────────────────────────────────────
+/* -----------------------------------------
    STYLES
-───────────────────────────────────────── */
+----------------------------------------- */
 const S = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -142,7 +137,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .prog-txt{font-size:10px;color:rgba(255,255,255,.7);white-space:nowrap}
 
 /* MAIN GRID */
-.main-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,340px);gap:20px;align-items:start}
+.main-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
 
 /* CARD */
 .card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px;animation:fadeUp .4s ease both;min-width:0}
@@ -198,8 +193,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .page-btn.on{background:var(--agua-d);color:white;border-color:var(--agua-d)}
 .page-btn:hover:not(.on){background:var(--mint);border-color:var(--agua-l);color:var(--agua-d)}
 
-/* RIGHT PANEL */
-.right-panel{display:flex;flex-direction:column;gap:18px}
+/* INSIGHTS PANEL */
+.right-panel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:stretch}
+.right-panel .card{height:100%}
 
 /* Category bars */
 .cat-bars{display:flex;flex-direction:column;gap:12px}
@@ -249,9 +245,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
+@media(max-width:1200px){
+  .right-panel{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .trend-card{grid-column:1/-1}
+}
 @media(max-width:1050px){
   .main-grid{grid-template-columns:1fr}
-  .right-panel{display:none}
+  .right-panel{display:grid}
 }
 @media(max-width:768px){
   :root{--sidebar-w:0px}
@@ -260,6 +260,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   .gastos-app .main{width:100%}
   .content{padding:16px}
   .summary-strip{grid-template-columns:1fr 1fr}
+  .right-panel{grid-template-columns:1fr}
+  .trend-card{grid-column:auto}
   .header{padding:0 16px}
 }
 @media(max-width:560px){
@@ -298,7 +300,7 @@ const CustomTip = ({ active, payload, label }) => {
 };
 
 export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
-  const [gastos, setGastos]         = useState(() => isGuest ? GASTOS_INIT : []);
+  const [gastos, setGastos]         = useState(() => getInitialExpenses(isGuest ? GASTOS_INIT : []));
   const [search, setSearch]         = useState("");
   const [catFilter, setCatFilter]   = useState("todas");
   const [soloRec, setSoloRec]       = useState(false);
@@ -323,6 +325,27 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
     setToast({ msg, err });
     setTimeout(() => setToast(null), 3000);
   };
+
+  useEffect(() => {
+    void loadStoredExpenses(isGuest ? GASTOS_INIT : []).then(setGastos);
+  }, [isGuest]);
+
+  const commitGastos = (updater) => {
+    setGastos(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      void writeStoredExpenses(next);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const syncExpenses = (event) => {
+      setGastos(event.detail || getInitialExpenses(isGuest ? GASTOS_INIT : []));
+      setPage(1);
+    };
+    window.addEventListener(EXPENSES_CHANGED_EVENT, syncExpenses);
+    return () => window.removeEventListener(EXPENSES_CHANGED_EVENT, syncExpenses);
+  }, [isGuest]);
 
   // Derived
   const filtered = useMemo(() => {
@@ -384,10 +407,10 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
     }
     const entry = { ...form, monto: Number(form.monto) };
     if (editId) {
-      setGastos(prev => prev.map(g => g.id === editId ? { ...g, ...entry } : g));
+      commitGastos(prev => prev.map(g => g.id === editId ? { ...g, ...entry } : g));
       showToast("Gasto actualizado ✓");
     } else {
-      setGastos(prev => [{ id: Date.now(), ...entry }, ...prev]);
+      commitGastos(prev => [{ id: Date.now(), ...entry }, ...prev]);
       showToast("Gasto registrado ✓");
     }
     setShowModal(false);
@@ -395,7 +418,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
   };
 
   const deleteGasto = (id) => {
-    setGastos(prev => prev.filter(g => g.id !== id));
+    commitGastos(prev => prev.filter(g => g.id !== id));
     showToast("Gasto eliminado");
   };
 
@@ -480,7 +503,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
                 {item.label}
               </button>
             ))}
-            <SidebarCards />
+            <SidebarCards onManage={() => handleNavClick("dashboard")} />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
@@ -504,7 +527,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
             <div className="hd-right">
               <button className="btn-icon" title="Exportar">📥</button>
               <button className="btn-primary" onClick={openNew}>
-                <span style={{ fontSize: 16 }}>＋</span> Nuevo gasto
+                <span style={{ fontSize: 16 }}>+</span> Nuevo gasto
               </button>
             </div>
           </header>
@@ -672,7 +695,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
                   </div>
                   {trendData.length === 0 ? (
                     <div className="empty-state" style={{ padding: "24px 0" }}>
-                      <div className="empty-icon">📈</div>
+                      <div className="empty-icon">🔍</div>
                       <div className="empty-txt">Aún no hay gastos para mostrar tendencia.</div>
                     </div>
                   ) : (
@@ -754,3 +777,5 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false }) {
     </>
   );
 }
+
+

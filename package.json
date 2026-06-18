@@ -8,7 +8,9 @@
   "type": "module",
   "main": "eslint.config.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
+    "dev:vite": "vite",
+    "dev:api": "node server/api.mjs",
     "build": "vite build",
     "deploy": "gh-pages -d dist",
     "lint": "eslint .",

@@ -667,7 +667,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
                 {item.label}
               </button>
             ))}
-            <SidebarCards />
+            <SidebarCards onManage={() => handleNavClick("dashboard")} />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">

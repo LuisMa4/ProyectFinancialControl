@@ -36,11 +36,6 @@ const NAV_ITEMS = [
   { id:"perfil",     label:"Mi Perfil",  icon:"👤" },
 ];
 
-const fmt = (n) => {
-  const abs = Math.abs(n).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `${n >= 0 ? "+" : "-"}S/ ${abs}`;
-};
-
 /* ─────────────────────────────────────────
    STYLES
 ───────────────────────────────────────── */
@@ -613,7 +608,7 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false }
                 {item.label}
               </button>
             ))}
-            <SidebarCards />
+            <SidebarCards onManage={() => handleNavClick("dashboard")} />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">

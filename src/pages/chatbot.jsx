@@ -4,6 +4,11 @@
    DATA & CONFIG
 ───────────────────────────────────────── */
 import SidebarCards from "../components/SidebarCards";
+import {
+  DEMO_EXPENSES,
+  EXPENSE_CATEGORIES,
+  addStoredExpense,
+} from "../utils/expensesStorage";
 
 const NAV_ITEMS = [
   { id:"dashboard",  label:"Dashboard",  icon:"◉" },
@@ -78,6 +83,14 @@ Responde SIEMPRE en español, de forma cálida, concisa y con emojis moderados.
 IMPORTANTE: responde en máximo 200 palabras salvo que el usuario pida un análisis detallado.
 `;
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+
+const getContextPrompt = (isGuest) => isGuest ? CONTEXTO_FINANCIERO : CONTEXTO_CUENTA_NUEVA;
+
+const toGeminiRole = (role) => role === "assistant" ? "model" : "user";
+
 /* ─────────────────────────────────────────
    STYLES
 ───────────────────────────────────────── */
@@ -135,23 +148,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .btn-ghost.active-btn{background:var(--agua-p);border-color:var(--agua);color:var(--agua-d)}
 
 /* ── CHAT LAYOUT ── */
-.chat-layout{display:grid;grid-template-columns:minmax(220px,260px) minmax(0,1fr);flex:1;overflow:hidden;min-height:0}
+.chat-layout{display:grid;grid-template-columns:minmax(180px,220px) minmax(0,1fr);flex:1;overflow:hidden;min-height:0}
 .chat-layout.no-history{grid-template-columns:1fr}
 
 /* ── HISTORY PANEL ── */
 .history-panel{background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.hist-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
-.hist-title{font-size:13px;font-weight:600;color:var(--slate-m);letter-spacing:.3px;text-transform:uppercase;margin-bottom:10px}
-.new-chat-btn{width:100%;padding:9px;background:linear-gradient(135deg,var(--agua-d),var(--agua));color:white;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 10px rgba(90,173,165,.25);transition:all .17s}
+.hist-head{padding:12px 12px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.hist-title{font-size:11px;font-weight:600;color:var(--slate-m);letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px}
+.new-chat-btn{width:100%;padding:8px;background:linear-gradient(135deg,var(--agua-d),var(--agua));color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 10px rgba(90,173,165,.25);transition:all .17s}
 .new-chat-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(90,173,165,.35)}
-.hist-list{flex:1;overflow-y:auto;padding:10px 10px}
-.hist-item{padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:4px}
+.hist-list{flex:1;overflow-y:auto;padding:8px}
+.hist-item{padding:8px 10px;border-radius:9px;cursor:pointer;transition:background .15s;margin-bottom:4px}
 .hist-item:hover{background:var(--mint)}
 .hist-item.active{background:var(--agua-p);border:1px solid var(--agua-l)}
 .hist-item-title{font-size:13px;font-weight:500;color:var(--slate);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hist-item-date{font-size:11px;color:var(--muted);margin-top:2px}
 .hist-item-preview{font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hist-sep{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;padding:8px 12px 4px}
+.hist-sep{font-size:9.5px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;padding:8px 8px 4px}
 
 /* ── CHAT AREA ── */
 .chat-area{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden;background:var(--mint)}
@@ -163,18 +176,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
 /* Welcome screen */
-.welcome{display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 24px 24px;animation:fadeUp .5s ease}
-.welcome-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--agua-d),var(--agua));display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:16px;box-shadow:0 6px 24px rgba(90,173,165,.3);animation:pulse 3s ease-in-out infinite}
+.welcome{display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 24px 20px;animation:fadeUp .5s ease;width:100%;max-width:900px;margin:0 auto}
+.welcome-avatar{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--agua-d),var(--agua));display:flex;align-items:center;justify-content:center;font-size:27px;margin-bottom:14px;box-shadow:0 6px 24px rgba(90,173,165,.3);animation:pulse 3s ease-in-out infinite}
 @keyframes pulse{0%,100%{box-shadow:0 6px 24px rgba(90,173,165,.3)}50%{box-shadow:0 6px 32px rgba(90,173,165,.5)}}
-.welcome-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--slate);letter-spacing:-.3px;margin-bottom:8px}
-.welcome-sub{font-size:14px;color:var(--muted);font-weight:300;line-height:1.6;max-width:380px;margin-bottom:28px}
+.welcome-title{font-family:'DM Serif Display',serif;font-size:23px;color:var(--slate);letter-spacing:-.2px;margin-bottom:6px}
+.welcome-sub{font-size:13px;color:var(--muted);font-weight:300;line-height:1.55;max-width:520px;margin-bottom:20px}
 
 /* Suggestion chips */
-.suggestions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:660px}
-.sug-chip{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--white);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .18s;text-align:left;font-family:'DM Sans',sans-serif}
+.suggestions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;width:100%;max-width:820px}
+.sug-chip{display:flex;align-items:center;gap:8px;min-height:44px;padding:9px 11px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .18s;text-align:left;font-family:'DM Sans',sans-serif}
 .sug-chip:hover{border-color:var(--agua);background:var(--agua-p);transform:translateY(-1px);box-shadow:0 4px 16px rgba(90,173,165,.12)}
-.sug-ico{font-size:18px;flex-shrink:0;margin-top:1px}
-.sug-txt{font-size:12.5px;color:var(--slate-m);line-height:1.4}
+.sug-ico{font-size:16px;flex-shrink:0}
+.sug-txt{font-size:12px;color:var(--slate-m);line-height:1.3}
 
 /* Messages */
 .msg{display:flex;gap:10px;animation:fadeUp .3s ease}
@@ -187,7 +200,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .msg-content{padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.65}
 .msg.fina .msg-content{background:var(--white);color:var(--slate);border:1px solid var(--border);border-bottom-left-radius:4px}
 .msg.user .msg-content{background:linear-gradient(135deg,var(--agua-d),var(--agua));color:white;border-bottom-right-radius:4px;box-shadow:0 2px 10px rgba(90,173,165,.25)}
-.msg-time{font-size:10px;color:var(--muted);padding:0 4px}
+.msg-meta-row{display:flex;align-items:center;gap:6px;padding:0 4px}
+.msg.user .msg-meta-row{justify-content:flex-end}
+.msg-time{font-size:10px;color:var(--muted)}
+.msg-source{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:2px 6px;border-radius:100px;border:1px solid var(--border);color:var(--muted);background:var(--white)}
+.msg-source.gemini{color:var(--agua-d);border-color:var(--agua-l);background:var(--agua-p)}
+.msg-source.local{color:var(--gold);border-color:#E9D7A6;background:#FFF8EC}
+.msg-source.action{color:var(--green);border-color:#B9E5D0;background:#E8F7F0}
 
 /* Markdown inside bubble */
 .msg-content strong{font-weight:600}
@@ -244,8 +263,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 
 /* ── RESPONSIVE ── */
 @media(max-width:1050px){
-  .chat-layout{grid-template-columns:220px 1fr}
-  .suggestions-grid{grid-template-columns:repeat(2,1fr)}
+  .chat-layout{grid-template-columns:minmax(170px,200px) 1fr}
+  .suggestions-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 }
 
 @media(max-width:640px){
@@ -256,7 +275,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   .hamburger{display:flex}
   .main{margin-left:0}
   .chatbot-app .main{margin-left:0;width:100vw}
-  .suggestions-grid{grid-template-columns:repeat(2,1fr);max-width:100%}
+  .suggestions-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));max-width:100%}
   .messages{padding:16px}
   .input-area{padding:12px 16px}
 }
@@ -270,9 +289,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
   .suggestions-grid{grid-template-columns:1fr 1fr}
   .msg-bubble{max-width:88%}
   .messages{padding:14px 12px}
-  .welcome{padding:28px 16px 16px}
-  .welcome-title{font-size:21px}
-  .welcome-avatar{width:60px;height:60px;font-size:26px}
+  .welcome{padding:22px 16px 14px}
+  .welcome-title{font-size:20px}
+  .welcome-avatar{width:52px;height:52px;font-size:23px}
   .input-area{padding:10px 12px}
   .context-bar{padding:6px 12px;gap:6px}
   .ctx-label{display:none}
@@ -351,6 +370,195 @@ const getCurrentPeriodLabel = () => {
   return `${month.charAt(0).toUpperCase() + month.slice(1)} ${now.getFullYear()}`;
 };
 
+const normalizeText = (text) => text
+  .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "");
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+const expenseCategoryKeywords = {
+  alimentacion: ["comida", "almuerzo", "cena", "desayuno", "restaurante", "super", "mercado", "wong", "plaza vea", "kfc"],
+  transporte: ["taxi", "uber", "bus", "metropolitano", "tren", "gasolina", "combustible", "transporte"],
+  entrete: ["cine", "netflix", "spotify", "juego", "salida", "bar", "entretenimiento"],
+  salud: ["farmacia", "medicina", "doctor", "clinica", "dentista", "salud"],
+  educacion: ["curso", "libro", "libreria", "clase", "universidad", "educacion"],
+  servicios: ["luz", "agua", "internet", "telefono", "claro", "recibo", "servicio"],
+  ropa: ["ropa", "camisa", "zapato", "zara", "ripley"],
+};
+
+const getCategoryName = (id) => EXPENSE_CATEGORIES.find((cat) => cat.id === id)?.name || "Otros";
+
+const guessExpenseCategory = (content) => {
+  const text = normalizeText(content);
+  const found = Object.entries(expenseCategoryKeywords)
+    .find(([, keywords]) => keywords.some((keyword) => text.includes(keyword)));
+  return found?.[0] || null;
+};
+
+const parseExpenseAmount = (content) => {
+  const match = normalizeText(content).match(/(?:s\/\.?|soles?)?\s*(\d+(?:[.,]\d{1,2})?)/);
+  return match ? Number(match[1].replace(",", ".")) : null;
+};
+
+const cleanExpenseDescription = (content) => {
+  const cleaned = content
+    .replace(/(?:agrega|agregar|registra|registrar|anota|añade|guardar|guarda|pague|pagué|gaste|gasté|un gasto|gasto de|por|de)\b/gi, " ")
+    .replace(/s\/\.?\s*\d+(?:[.,]\d{1,2})?/gi, " ")
+    .replace(/\b\d+(?:[.,]\d{1,2})?\s*(?:soles?)?\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned || cleaned.length < 3) return "";
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+};
+
+const getExpenseIntent = (content) => {
+  const text = normalizeText(content);
+  return ["agrega", "agregar", "registra", "registrar", "anota", "anade", "añade", "guardar", "gasto", "gaste"].some((word) => text.includes(word));
+};
+
+const mergeExpenseDraft = (content, currentDraft = {}) => {
+  const amount = parseExpenseAmount(content);
+  const category = guessExpenseCategory(content);
+  const description = cleanExpenseDescription(content);
+
+  return {
+    desc: description || currentDraft.desc || "",
+    monto: amount || currentDraft.monto || null,
+    cat: category || currentDraft.cat || null,
+    fecha: currentDraft.fecha || todayISO(),
+    nota: currentDraft.nota || "Agregado desde Fina",
+    recurrente: currentDraft.recurrente || false,
+  };
+};
+
+const getMissingExpenseFields = (draft) => {
+  const missing = [];
+  if (!draft.desc) missing.push("descripción");
+  if (!draft.monto) missing.push("monto");
+  if (!draft.cat) missing.push("categoría");
+  return missing;
+};
+
+const formatExpenseDraft = (draft) => [
+  `- Descripción: **${draft.desc || "pendiente"}**`,
+  `- Monto: **${draft.monto ? `S/ ${draft.monto.toFixed(2)}` : "pendiente"}**`,
+  `- Categoría: **${draft.cat ? getCategoryName(draft.cat) : "pendiente"}**`,
+  `- Fecha: **${draft.fecha}**`,
+].join("\n");
+
+const getLocalReply = (content, isGuest) => {
+  const text = content.toLowerCase();
+
+  if (!isGuest) {
+    if (text.includes("meta")) {
+      return "**Primera meta sugerida:** arma un fondo de emergencia inicial de S/ 1,000. Empieza con un aporte fijo semanal y ajusta cuando registres tus ingresos reales.";
+    }
+    if (text.includes("categor")) {
+      return "**Categorías iniciales:** vivienda, alimentación, transporte, servicios, salud, educación, ocio y ahorro. Con eso puedes ordenar el 90% de tus movimientos sin complicarte.";
+    }
+    return "Para empezar desde cero, registra tus ingresos mensuales, tus gastos fijos y una primera meta pequeña. Con esos tres datos Savia puede mostrarte presupuesto, calendario y alertas útiles.";
+  }
+
+  if (text.includes("presupuesto")) {
+    return "**Tu presupuesto va saludable:** llevas S/ 1,700 gastados de S/ 2,500. Te quedan S/ 800 disponibles. Vigila salud y ropa, porque ya están sobre el límite.";
+  }
+  if (text.includes("europa") || text.includes("terminar")) {
+    return "**Viaje a Europa:** vas en S/ 3,200 de S/ 8,000. Manteniendo S/ 400 al mes, faltan unos 12 meses para completarla.";
+  }
+  if (text.includes("pasando") || text.includes("categor")) {
+    return "**Categorías sobre presupuesto:** salud va S/ 12 arriba y ropa S/ 69 arriba. El ajuste más rápido sería congelar compras de ropa este mes y revisar gastos médicos no recurrentes.";
+  }
+  if (text.includes("ahorrar") || text.includes("tips")) {
+    return "Tres acciones concretas: **1.** separa el aporte a metas apenas entra el sueldo, **2.** pon un tope semanal para ocio, **3.** revisa suscripciones y gastos repetidos antes del día 5.";
+  }
+  if (text.includes("salud financiera") || text.includes("analiza")) {
+    return "**Lectura rápida:** tienes saldo positivo, metas activas y presupuesto con margen. El riesgo está en categorías pequeñas que se pasan sin ruido, como ropa y salud.";
+  }
+  return "Viendo tus datos, el foco de este mes debería ser conservar los S/ 800 libres y no tocar los aportes a metas. Pregúntame por presupuesto, metas o categorías y lo desgloso.";
+};
+
+const getGeminiReply = async ({ content, history, isGuest }) => {
+  if (!GEMINI_API_KEY) {
+    return {
+      content: getLocalReply(content, isGuest),
+      source: "local",
+      error: "missing-api-key",
+    };
+  }
+
+  const contents = [
+    ...history.slice(-8).map((message) => ({
+      role: toGeminiRole(message.role),
+      parts: [{ text: message.content }],
+    })),
+    {
+      role: "user",
+      parts: [{ text: content }],
+    },
+  ];
+
+  const requestBody = JSON.stringify({
+    system_instruction: {
+      parts: [{ text: getContextPrompt(isGuest) }],
+    },
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+      topP: 0.9,
+      maxOutputTokens: 700,
+    },
+  });
+  const modelsToTry = [...new Set([GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS])];
+  let lastError = null;
+
+  for (const model of modelsToTry) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+    try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
+      },
+      body: requestBody,
+    });
+
+    if (!response.ok) {
+      lastError = `gemini-${response.status}`;
+      continue;
+    }
+
+    const data = await response.json();
+    const geminiText = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
+
+    if (!geminiText) {
+      return {
+        content: `${getLocalReply(content, isGuest)}\n\n_Nota: Gemini no devolvió texto útil, así que usé el modo local._`,
+        source: "local",
+        error: "empty-response",
+      };
+    }
+
+    return {
+      content: geminiText,
+      source: "gemini",
+      error: null,
+    };
+    } catch {
+      lastError = "network";
+    }
+  }
+
+  return {
+    content: `${getLocalReply(content, isGuest)}\n\n_Nota: no pude conectar con Gemini en este intento. Revisa la API key, el modelo y reinicia Vite si acabas de editar el .env._`,
+    source: "local",
+    error: lastError,
+  };
+};
+
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
@@ -361,14 +569,16 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
   const [activeNav, setActiveNav]   = useState("chatbot");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
+  const [pendingExpense, setPendingExpense] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
+  const nextMessageId  = useRef(1);
   const displayName = isGuest ? "Juan Pérez" : "Cuenta nueva";
   const firstName = isGuest ? "Juan" : "Cuenta";
   const avatar = isGuest ? "JP" : "CN";
   const planLabel = isGuest ? "⭐ Premium" : "Plan gratuito";
   const suggestions = isGuest ? SUGERENCIAS_INIT : SUGERENCIAS_EMPTY;
-  const contextPrompt = isGuest ? CONTEXTO_FINANCIERO : CONTEXTO_CUENTA_NUEVA;
+  const hasGeminiConfigured = Boolean(GEMINI_API_KEY);
 
   const handleNavClick = (id) => {
     setActiveNav(id);
@@ -380,43 +590,98 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  const getExpenseActionReply = async (content) => {
+    const text = normalizeText(content);
+
+    if (pendingExpense) {
+      if (["si", "sí", "confirmo", "confirmar", "guardalo", "guárdalo", "guardar"].some((word) => text.includes(normalizeText(word)))) {
+        const saved = await addStoredExpense(pendingExpense, isGuest ? DEMO_EXPENSES : []);
+        setPendingExpense(null);
+        return {
+          handled: true,
+          content: `Listo, registré el gasto en **Gastos**:\n${formatExpenseDraft(saved)}\n\nPuedes verlo entrando a la página de Gastos.`,
+        };
+      }
+
+      if (["no", "cancelar", "cancela", "descartar"].some((word) => text.includes(word))) {
+        setPendingExpense(null);
+        return {
+          handled: true,
+          content: "Perfecto, no guardé ese gasto. Si quieres, dime el gasto completo y lo preparo de nuevo.",
+        };
+      }
+
+      const nextDraft = mergeExpenseDraft(content, pendingExpense);
+      const missing = getMissingExpenseFields(nextDraft);
+      setPendingExpense(nextDraft);
+
+      if (missing.length) {
+        return {
+          handled: true,
+          content: `Me falta ${missing.join(", ")} para registrar el gasto.\n\nBorrador actual:\n${formatExpenseDraft(nextDraft)}`,
+        };
+      }
+
+      return {
+        handled: true,
+        content: `Tengo este gasto listo para guardar:\n${formatExpenseDraft(nextDraft)}\n\nResponde **confirmar** para registrarlo o **cancelar** para descartarlo.`,
+      };
+    }
+
+    if (!getExpenseIntent(content)) return { handled: false };
+
+    const draft = mergeExpenseDraft(content);
+    const missing = getMissingExpenseFields(draft);
+    setPendingExpense(draft);
+
+    if (missing.length) {
+      return {
+        handled: true,
+        content: `Puedo registrarlo, pero me falta ${missing.join(", ")}.\n\nBorrador:\n${formatExpenseDraft(draft)}`,
+      };
+    }
+
+    return {
+      handled: true,
+      content: `Tengo este gasto listo para guardar:\n${formatExpenseDraft(draft)}\n\nResponde **confirmar** para registrarlo o **cancelar** para descartarlo.`,
+    };
+  };
+
   const sendMessage = async (text) => {
     const content = (text || input).trim();
     if (!content || loading) return;
     setInput("");
 
-    const userMsg = { id: Date.now(), role: "user", content, time: timestamp() };
+    const userMsg = { id: nextMessageId.current++, role: "user", content, time: timestamp() };
+    const historyForGemini = messages;
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
     try {
-      const historyForApi = messages.slice(-10).map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const actionReply = await getExpenseActionReply(content);
+      if (actionReply.handled) {
+        const finaMsg = {
+          id: nextMessageId.current++,
+          role: "assistant",
+          content: actionReply.content,
+          source: "action",
+          error: null,
+          time: timestamp(),
+        };
+        setMessages(prev => [...prev, finaMsg]);
+        return;
+      }
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: contextPrompt,
-          messages: [...historyForApi, { role: "user", content }],
-        }),
-      });
-
-      const data = await response.json();
-      const reply = data.content?.[0]?.text || "Lo siento, no pude procesar tu consulta. Intenta de nuevo.";
-
-      const finaMsg = { id: Date.now() + 1, role: "assistant", content: reply, time: timestamp() };
-      setMessages(prev => [...prev, finaMsg]);
-    } catch (err) {
-      const errMsg = {
-        id: Date.now() + 1, role: "assistant", time: timestamp(),
-        content: "Ups, hubo un problema de conexión. Verifica tu acceso y vuelve a intentarlo. 🌐",
+      const reply = await getGeminiReply({ content, history: historyForGemini, isGuest });
+      const finaMsg = {
+        id: nextMessageId.current++,
+        role: "assistant",
+        content: reply.content,
+        source: reply.source,
+        error: reply.error,
+        time: timestamp(),
       };
-      setMessages(prev => [...prev, errMsg]);
+      setMessages(prev => [...prev, finaMsg]);
     } finally {
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -456,7 +721,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
                 {item.label}
               </button>
             ))}
-            <SidebarCards />
+            <SidebarCards onManage={() => handleNavClick("dashboard")} />
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
@@ -494,7 +759,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
           {/* CONTEXT BAR */}
           <div className="context-bar">
             <span className="ctx-label">Contexto activo:</span>
-            <span className="ctx-item"><span className="ctx-dot"/>{" "}{isGuest ? "Perfil de Juan" : "Cuenta nueva"}</span>
+            <span className="ctx-item" title={hasGeminiConfigured ? "Gemini conectado" : "Modo local sin API"}><span className="ctx-dot"/>{" "}{isGuest ? "Perfil de Juan" : "Cuenta nueva"}</span>
             <span className="ctx-item">💰 Saldo {isGuest ? "S/ 1,700" : "S/ 0"}</span>
             <span className="ctx-item">🎯 {isGuest ? "4 metas activas" : "0 metas"}</span>
             <span className="ctx-item">📅 {currentPeriodLabel}</span>
@@ -552,7 +817,14 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
                           : msg.content
                         }
                       </div>
-                      <div className="msg-time">{msg.time}</div>
+                      <div className="msg-meta-row">
+                        <span className="msg-time">{msg.time}</span>
+                        {msg.role === "assistant" && msg.source && (
+                          <span className={`msg-source ${msg.source}`} title={msg.error ? `Fallback: ${msg.error}` : msg.source === "action" ? "Acción aplicada dentro de Savia" : "Respuesta generada por Gemini"}>
+                            {msg.source === "gemini" ? "Gemini" : msg.source === "action" ? "Acción" : "Local"}
+                          </span>
+                        )}
+                      </div>
                       {/* Quick follow-ups after assistant messages */}
                       {msg.role === "assistant" && messages[messages.length-1]?.id === msg.id && !loading && (
                         <div className="msg-actions">

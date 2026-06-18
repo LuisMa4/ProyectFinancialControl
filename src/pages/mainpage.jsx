@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import SidebarCards from "../components/SidebarCards";
-import { readStoredCards, writeStoredCards } from "../utils/cardsStorage";
+import { loadStoredCards, readStoredCards, writeStoredCards } from "../utils/cardsStorage";
 import "./mainpage.css";
 
 const GASTOS_MES = [
@@ -275,6 +275,10 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
   const planLabel = isGuest ? "⭐ Premium" : "Plan gratuito";
   const currentCardBrand = getCardBrand(cardForm.numero);
 
+  useEffect(() => {
+    void loadStoredCards().then(setCards);
+  }, []);
+
   const handleNavClick = (id) => {
     setActiveNav(id);
     setSidebarOpen(false);
@@ -310,7 +314,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
     setCardErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  const verifyCard = (event) => {
+  const verifyCard = async (event) => {
     event.preventDefault();
     const digits = onlyDigits(cardForm.numero);
     const errors = {};
@@ -339,11 +343,12 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
       estado: "Verificada",
     };
 
+    let nextCards = [];
     setCards((prev) => {
-      const nextCards = [verifiedCard, ...prev];
-      writeStoredCards(nextCards);
+      nextCards = [verifiedCard, ...prev];
       return nextCards;
     });
+    await writeStoredCards(nextCards);
     setPendingCard(verifiedCard);
     setCardModalStep("sync");
   };

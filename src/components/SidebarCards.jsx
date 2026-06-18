@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CARD_STORAGE_EVENT, CARD_STORAGE_KEY, readStoredCards } from "../utils/cardsStorage";
+import { CARD_STORAGE_EVENT, CARD_STORAGE_KEY, loadStoredCards, readStoredCards } from "../utils/cardsStorage";
 import "./SidebarCards.css";
 
 export default function SidebarCards({ onManage }) {
@@ -10,6 +10,8 @@ export default function SidebarCards({ onManage }) {
     const handleStorage = (event) => {
       if (!event.key || event.key === CARD_STORAGE_KEY) syncCards();
     };
+
+    void loadStoredCards().then(setCards);
 
     window.addEventListener(CARD_STORAGE_EVENT, syncCards);
     window.addEventListener("storage", handleStorage);

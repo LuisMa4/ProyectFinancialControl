@@ -369,12 +369,6 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
     setTimeout(() => inputRef.current?.focus(), 150);
   }, []);
 
-  // reset icono/cat when type changes
-  useEffect(() => {
-    setForm(p => ({ ...p, categoria: "", icono: "" }));
-    setErrors({});
-  }, [tipo]);
-
   const setField = (f) => (e) => {
     setForm(p => ({ ...p, [f]: e.target.value }));
     if (errors[f]) setErrors(p => ({ ...p, [f]: null }));
@@ -477,7 +471,11 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
             ].map(t => (
               <button key={t.k}
                 className={`type-tab${tipo === t.k ? ` active-${t.k}` : ""}`}
-                onClick={() => setTipo(t.k)}>
+                onClick={() => {
+                  setTipo(t.k);
+                  setForm(p => ({ ...p, categoria: "", icono: "" }));
+                  setErrors({});
+                }}>
                 <div className="type-tab-ico">{t.ico}</div>
                 <span className="type-tab-label">{t.label}</span>
               </button>
@@ -667,7 +665,7 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
    DEMO WRAPPER
 ───────────────────────────────────────── */
 export default function CreateEvent(props) {
-  return (
+  const modal = (
     <>
       <style>{S}</style>
       <CalEventoModal {...props} />
@@ -688,7 +686,7 @@ export default function CreateEvent(props) {
     { dia: hoy.getDate() + 2, label: DIAS_SEMANA[(new Date(anio, mes, hoy.getDate()+2).getDay()||7)-1] },
   ];
 
-  return (
+  return props.dia ? modal : (
     <>
       <style>{S}</style>
       <div className="demo-wrap">
@@ -714,9 +712,7 @@ export default function CreateEvent(props) {
           mes={mes}
           anio={anio}
           onClose={() => setModalDia(null)}
-          onSave={(data) => {
-            console.log("Evento guardado:", data);
-          }}
+          onSave={() => {}}
         />
       )}
     </>

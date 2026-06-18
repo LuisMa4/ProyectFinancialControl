@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { loginAccount, writeAuthToken } from "../utils/authStorage";
 import "./login.css";
 
-export default function LoginPage({ onRegister, onLoginSuccess, onGuest }) {
+export default function LoginPage({ onRegister, onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -28,13 +29,19 @@ export default function LoginPage({ onRegister, onLoginSuccess, onGuest }) {
     }
     setErrors({});
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1600));
-    setLoading(false);
-    setToast("¡Bienvenido! Ingresando al sistema...");
-    setTimeout(() => {
-      setToast(null);
-      onLoginSuccess();
-    }, 1500);
+    try {
+      const response = await loginAccount({ email, password, rememberMe: remember });
+      writeAuthToken(response.token);
+      setToast("¡Bienvenido! Ingresando al sistema...");
+      setTimeout(() => {
+        setToast(null);
+        onLoginSuccess(response.user, response.token);
+      }, 900);
+    } catch (error) {
+      setErrors({ form: error.message || "No se pudo iniciar sesión" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (field) => (e) => {
@@ -152,19 +159,11 @@ export default function LoginPage({ onRegister, onLoginSuccess, onGuest }) {
                 <a href="#" className="forgot-link">¿Olvidaste tu contraseña?</a>
               </div>
 
+              {errors.form && <div className="error-msg">⚠ {errors.form}</div>}
+
               <button type="submit" className="btn-login" disabled={loading}>
                 {loading ? <div className="spinner" /> : null}
                 {loading ? "Verificando..." : "Entrar al sistema →"}
-              </button>
-
-              <div className="divider">
-                <div className="divider-line" />
-                <span className="divider-text">o continúa como</span>
-                <div className="divider-line" />
-              </div>
-
-              <button type="button" className="btn-guest" onClick={onGuest}>
-                👤 Explorar como visitante
               </button>
 
               <p className="signup-line">
