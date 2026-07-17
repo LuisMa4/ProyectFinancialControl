@@ -1,12 +1,7 @@
 import { apiRequest } from "./apiClient";
+import { readAuthToken, writeAuthToken } from "./authToken";
 
-const AUTH_TOKEN_KEY = "savia-auth-token";
-
-export const readAuthToken = () => localStorage.getItem(AUTH_TOKEN_KEY) || "";
-export const writeAuthToken = (token) => {
-  if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
-  else localStorage.removeItem(AUTH_TOKEN_KEY);
-};
+export { readAuthToken, writeAuthToken };
 
 export const registerAccount = async (payload) => apiRequest("/auth/register", {
   method: "POST",

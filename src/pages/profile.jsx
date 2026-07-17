@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SidebarCards from "../components/SidebarCards";
+import { apiRequest } from "../utils/apiClient";
+import { loadStoredExpenses } from "../utils/expensesStorage";
+import { loadStoredGoals } from "../utils/goalsStorage";
 
 /* ─────────────────────────────────────────
    MOCK DATA
@@ -376,8 +379,25 @@ const Switch = ({ checked, onChange }) => (
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
-export default function PerfilPage({ onLogout, onNavigate, isGuest = false, registeredAt }) {
-  const initialUser = isGuest ? USUARIO_INIT : { ...USUARIO_EMPTY, fechaRegistro: registeredAt || "" };
+export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user = null, registeredAt, onUserUpdate = null }) {
+  const initialUser = user
+    ? {
+        nombre: user.firstName || "",
+        apellido: user.lastName || "",
+        email: user.email || "",
+        telefono: user.phone || "",
+        moneda: user.currency || "PEN",
+        idioma: user.language || "es",
+        plan: user.plan || "free",
+        fechaRegistro: registeredAt || user.registeredAt || "",
+        avatar: user.avatar || `${(user.firstName?.[0] || user.fullName?.[0] || "C").toUpperCase()}${(user.lastName?.[0] || "").toUpperCase()}`.slice(0, 2),
+        avatarColor: user.avatarColor || "#5AADA5",
+        presupuestoMensual: user.monthlyBudget || 0,
+        timezone: user.timezone || "America/Lima",
+      }
+    : isGuest
+      ? USUARIO_INIT
+      : { ...USUARIO_EMPTY, fechaRegistro: registeredAt || "" };
   const [activeNav, setActiveNav] = useState("perfil");
   const [tab, setTab]             = useState("personal"); // personal | seguridad | notificaciones | plan
   const [usuario, setUsuario]     = useState(initialUser);
@@ -413,12 +433,46 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
 
   // Confirm modal
   const [confirm, setConfirm] = useState(null); // { title, msg, onOk }
+  const [realExpenses, setRealExpenses] = useState([]);
+  const [realGoals, setRealGoals] = useState([]);
+
+  useEffect(() => {
+    if (isGuest) return;
+    let alive = true;
+    void loadStoredExpenses([]).then((data) => alive && setRealExpenses(Array.isArray(data) ? data : []));
+    void loadStoredGoals([]).then((data) => alive && setRealGoals(Array.isArray(data) ? data : []));
+    return () => { alive = false; };
+  }, [isGuest]);
+
+  const totalAhorrado = realGoals.reduce((total, goal) => total + Math.min(goal.actual || 0, goal.meta || 0), 0);
+  const monthKeyNow = new Date().toISOString().slice(0, 7);
+  const gastosMes = realExpenses
+    .filter((item) => String(item.fecha).slice(0, 7) === monthKeyNow)
+    .reduce((total, item) => total + (item.monto || 0), 0);
+  const mesesUso = (() => {
+    if (!usuario.fechaRegistro) return 1;
+    const parsed = new Date(usuario.fechaRegistro);
+    if (Number.isNaN(parsed.getTime())) return 1;
+    return Math.max(1, Math.round((Date.now() - parsed.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+  })();
+
   const estadisticas = isGuest ? ESTADISTICAS : [
-    { label:"Metas activas",      val:"0", icon:"🎯", color:"#5AADA5" },
-    { label:"Meses de uso",       val:"0", icon:"📅", color:"#C9A96E" },
-    { label:"Ahorro acumulado",   val:"S/ 0", icon:"💰", color:"#4CAF7D" },
+    { label:"Gastos registrados", val:String(realExpenses.length), icon:"💳", color:"#7EC8C0" },
+    { label:"Metas activas",      val:String(realGoals.length), icon:"🎯", color:"#5AADA5" },
+    { label:"Meses de uso",       val:String(mesesUso), icon:"📅", color:"#C9A96E" },
+    { label:"Ahorro acumulado",   val:`S/ ${totalAhorrado.toLocaleString()}`, icon:"💰", color:"#4CAF7D" },
   ];
-  const actividad = isGuest ? ACTIVIDAD : [];
+  const actividad = isGuest ? ACTIVIDAD : [...realExpenses]
+    .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
+    .slice(0, 6)
+    .map((item) => ({
+      id: item.id,
+      tipo: "gasto",
+      desc: item.desc,
+      monto: -(item.monto || 0),
+      fecha: new Date(`${item.fecha}T12:00:00`).toLocaleDateString("es-PE", { day: "numeric", month: "short" }),
+      icon: "💳",
+    }));
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -427,21 +481,52 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
     setDirty(true);
   };
 
-  const guardarPerfil = async () => {
-    setSaving(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setUsuario({ ...form });
-    setSaving(false);
-    setDirty(false);
-    showToast("✓ Perfil actualizado correctamente");
+  const persistProfile = async (nextForm) => {
+    if (isGuest || !user) return null;
+    const response = await apiRequest("/user", {
+      method: "PUT",
+      body: JSON.stringify({
+        firstName: nextForm.nombre,
+        lastName: nextForm.apellido,
+        phone: nextForm.telefono,
+        currency: nextForm.moneda,
+        language: nextForm.idioma,
+        timezone: nextForm.timezone,
+        avatar: nextForm.avatar,
+        avatarColor: nextForm.avatarColor,
+        monthlyBudget: Number(nextForm.presupuestoMensual) || 0,
+      }),
+    });
+    if (response?.user && onUserUpdate) onUserUpdate(response.user);
+    return response?.user || null;
   };
 
-  const guardarAvatar = () => {
+  const guardarPerfil = async () => {
+    setSaving(true);
+    try {
+      await persistProfile(form);
+      setUsuario({ ...form });
+      setDirty(false);
+      showToast("✓ Perfil actualizado correctamente");
+    } catch {
+      showToast("⚠ No se pudo guardar el perfil. Verifica la conexión.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const guardarAvatar = async () => {
     const label = avEmoji || usuario.avatar;
+    const nextForm = { ...form, avatar: label, avatarColor: avColor };
     setUsuario(p => ({ ...p, avatar: label, avatarColor: avColor }));
-    setForm(p => ({ ...p, avatar: label, avatarColor: avColor }));
+    setForm(nextForm);
     setShowAvatarModal(false);
-    showToast("✓ Avatar actualizado");
+    try {
+      await persistProfile(nextForm);
+      showToast("✓ Avatar actualizado");
+    } catch {
+      showToast("⚠ No se pudo guardar el avatar.");
+    }
   };
 
   const cambiarPassword = async () => {
@@ -449,11 +534,22 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
     if (pwForm.nueva.length < 8) { showToast("⚠ La contraseña nueva debe tener al menos 8 caracteres"); return; }
     if (pwForm.nueva !== pwForm.confirmar) { showToast("⚠ Las contraseñas no coinciden"); return; }
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSaving(false);
-    setPwForm({ actual: "", nueva: "", confirmar: "" });
-    setShowPwModal(false);
-    showToast("✓ Contraseña actualizada correctamente");
+    try {
+      await apiRequest("/auth/password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword: pwForm.actual, newPassword: pwForm.nueva }),
+      });
+      setPwForm({ actual: "", nueva: "", confirmar: "" });
+      setShowPwModal(false);
+      showToast("✓ Contraseña actualizada correctamente");
+    } catch (error) {
+      const message = (() => {
+        try { return JSON.parse(error.message)?.error; } catch { return null; }
+      })();
+      showToast(`⚠ ${message || "No se pudo cambiar la contraseña"}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const pwStrength = getPwStrength(pwForm.nueva);
@@ -629,11 +725,11 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, regi
               </div>
               <div className="hero-stats">
                 <div className="hero-stat">
-                  <div className="hero-stat-val">{isGuest ? "S/ 8,170" : "S/ 0"}</div>
+                  <div className="hero-stat-val">{isGuest ? "S/ 8,170" : `S/ ${totalAhorrado.toLocaleString()}`}</div>
                   <div className="hero-stat-lbl">Total ahorrado</div>
                 </div>
                 <div className="hero-stat">
-                  <div className="hero-stat-val">{isGuest ? "S/ 1,700" : "S/ 0"}</div>
+                  <div className="hero-stat-val">{isGuest ? "S/ 1,700" : `S/ ${Math.max(0, (Number(usuario.presupuestoMensual) || 0) - gastosMes).toLocaleString()}`}</div>
                   <div className="hero-stat-lbl">Saldo libre</div>
                 </div>
               </div>

@@ -100,6 +100,21 @@ CREATE TABLE IF NOT EXISTS transactions (
   FOREIGN KEY (card_id) REFERENCES payment_cards(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN ('pago', 'ingreso', 'meta')),
+  title TEXT NOT NULL,
+  amount REAL NOT NULL,
+  day_of_month INTEGER NOT NULL,
+  icon TEXT NOT NULL,
+  color TEXT NOT NULL,
+  is_recurring INTEGER NOT NULL DEFAULT 0 CHECK (is_recurring IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON app_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_cards_user_id ON payment_cards(user_id);
 CREATE INDEX IF NOT EXISTS idx_goals_user_id ON savings_goals(user_id);
@@ -107,3 +122,4 @@ CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, t
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
 CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_goal ON transactions(goal_id);
+CREATE INDEX IF NOT EXISTS idx_events_user_day ON calendar_events(user_id, day_of_month);

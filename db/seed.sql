@@ -63,5 +63,17 @@ INSERT INTO transactions (
   (1, NULL, 3, NULL, 'goal_contribution', 'Aporte Laptop', 200.00, '2025-05-15', '', 1, '💻', '#C9A96E'),
   (1, NULL, 4, NULL, 'goal_contribution', 'Aporte Auto', 500.00, '2025-05-01', '', 1, '🚗', '#8AADA9');
 
+INSERT INTO calendar_events (
+  user_id, event_type, title, amount, day_of_month, icon, color, is_recurring
+) VALUES
+  (1, 'pago', 'Alquiler', -1200, 1, '🏠', '#E07070', 1),
+  (1, 'ingreso', 'Sueldo', 3600, 5, '💼', '#4CAF7D', 1),
+  (1, 'pago', 'Claro Internet', -89, 5, '📡', '#E07070', 1),
+  (1, 'meta', 'Aporte "Europa"', -400, 6, '✈️', '#7EC8C0', 1),
+  (1, 'pago', 'Netflix', -37.90, 8, '🎬', '#E07070', 1),
+  (1, 'meta', 'Aporte "Laptop"', -200, 15, '💻', '#C9A96E', 1),
+  (1, 'ingreso', 'Freelance diseño', 800, 22, '🎨', '#4CAF7D', 0),
+  (1, 'meta', 'Aporte "Emergencia"', -300, 28, '🛡️', '#5AADA5', 1);
+
 INSERT INTO app_sessions (id, user_id, session_mode, current_page, is_active, started_at) VALUES
   (1, 1, 'user', 'perfil', 1, CURRENT_TIMESTAMP);

@@ -5,10 +5,11 @@
 ───────────────────────────────────────── */
 import SidebarCards from "../components/SidebarCards";
 import {
-  DEMO_EXPENSES,
   EXPENSE_CATEGORIES,
   addStoredExpense,
 } from "../utils/expensesStorage";
+import { loadStoredGoals } from "../utils/goalsStorage";
+import { apiRequest } from "../utils/apiClient";
 
 const NAV_ITEMS = [
   { id:"dashboard",  label:"Dashboard",  icon:"◉" },
@@ -18,45 +19,6 @@ const NAV_ITEMS = [
   { id:"chatbot",    label:"Chatbot IA", icon:"🤖" },
   { id:"perfil",     label:"Mi Perfil",  icon:"👤" },
 ];
-
-const CONTEXTO_FINANCIERO = `
-Eres Fina, la asistente financiera personal de Savia, una aplicación de gestión de finanzas personales.
-Tu rol es ayudar al usuario a entender sus finanzas, dar consejos personalizados y responder preguntas sobre su situación económica.
-
-DATOS DEL USUARIO (Juan Pérez, Lima, Perú):
-- Saldo disponible: S/ 1,700
-- Ingresos del mes (mayo 2025): S/ 3,600 (sueldo + freelance)
-- Gastos del mes: S/ 1,700 aprox
-- Presupuesto mensual: S/ 2,500
-- Total ahorrado en metas: S/ 8,170
-
-METAS ACTIVAS:
-- Viaje a Europa: S/ 3,200 / S/ 8,000 (40%) — aporte mensual S/ 400
-- Fondo de emergencia: S/ 4,100 / S/ 5,000 (82%) — casi completa
-- Laptop nueva: S/ 870 / S/ 3,500 (25%) — aporte mensual S/ 200
-- Auto propio: S/ 2,500 / S/ 20,000 (12.5%) — aporte mensual S/ 500
-
-GASTOS POR CATEGORÍA (mayo):
-- Alimentación: S/ 372 (presupuesto S/ 800)
-- Transporte: S/ 94 (presupuesto S/ 400)
-- Entretenimiento: S/ 96 (presupuesto S/ 300)
-- Salud: S/ 262 (presupuesto S/ 250) — SOBRE PRESUPUESTO
-- Servicios (luz, agua, internet): S/ 220 (presupuesto S/ 350)
-- Ropa: S/ 219 (presupuesto S/ 150) — SOBRE PRESUPUESTO
-
-PRÓXIMOS PAGOS (junio):
-- Alquiler: S/ 1,200 — día 1
-- Claro Internet: S/ 89 — día 5
-- Seguro auto: S/ 220 — día 15
-
-TIPO DE CAMBIO HOY: USD/PEN = 3.74, EUR/PEN = 4.05
-
-Responde SIEMPRE en español, de forma cálida, concisa y con emojis moderados.
-Usa formato markdown simple (negritas, listas) cuando ayude a la claridad.
-Si el usuario pregunta algo que no tenga que ver con finanzas, redirígelo amablemente.
-Sé proactivo: ofrece consejos específicos basados en los datos del usuario.
-IMPORTANTE: responde en máximo 200 palabras salvo que el usuario pida un análisis detallado.
-`;
 
 const SUGERENCIAS_INIT = [
   { id:1, texto:"¿Cómo va mi presupuesto este mes?",   icono:"📊" },
@@ -74,22 +36,8 @@ const SUGERENCIAS_EMPTY = [
   { id:4, texto:"Dame 3 tips para organizar mis finanzas", icono:"💡" },
 ];
 
-const CONTEXTO_CUENTA_NUEVA = `
-Eres Fina, la asistente financiera personal de Savia.
-El usuario acaba de iniciar una cuenta nueva y todavía no tiene gastos, metas ni eventos registrados.
-Ayúdalo a empezar desde cero: sugiere primeros pasos, categorías iniciales, presupuestos realistas y metas de ahorro.
-No inventes datos financieros personales. Si necesitas cifras, pide al usuario sus ingresos, gastos fijos o prioridades.
-Responde SIEMPRE en español, de forma cálida, concisa y con emojis moderados.
-IMPORTANTE: responde en máximo 200 palabras salvo que el usuario pida un análisis detallado.
-`;
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash";
-const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
-
-const getContextPrompt = (isGuest) => isGuest ? CONTEXTO_FINANCIERO : CONTEXTO_CUENTA_NUEVA;
-
-const toGeminiRole = (role) => role === "assistant" ? "model" : "user";
+// Las llamadas a Gemini se hacen a través del servidor local (/api/chat):
+// la API key nunca llega al navegador.
 
 /* ─────────────────────────────────────────
    STYLES
@@ -480,89 +428,39 @@ const getLocalReply = (content, isGuest) => {
 };
 
 const getGeminiReply = async ({ content, history, isGuest }) => {
-  if (!GEMINI_API_KEY) {
-    return {
-      content: getLocalReply(content, isGuest),
-      source: "local",
-      error: "missing-api-key",
-    };
-  }
-
-  const contents = [
-    ...history.slice(-8).map((message) => ({
-      role: toGeminiRole(message.role),
-      parts: [{ text: message.content }],
-    })),
-    {
-      role: "user",
-      parts: [{ text: content }],
-    },
+  const messages = [
+    ...history.slice(-8).map((message) => ({ role: message.role, content: message.content })),
+    { role: "user", content },
   ];
 
-  const requestBody = JSON.stringify({
-    system_instruction: {
-      parts: [{ text: getContextPrompt(isGuest) }],
-    },
-    contents,
-    generationConfig: {
-      temperature: 0.7,
-      topP: 0.9,
-      maxOutputTokens: 700,
-    },
-  });
-  const modelsToTry = [...new Set([GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS])];
-  let lastError = null;
-
-  for (const model of modelsToTry) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-
-    try {
-    const response = await fetch(endpoint, {
+  try {
+    const reply = await apiRequest("/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY,
-      },
-      body: requestBody,
+      body: JSON.stringify({ messages, language: "es" }),
     });
 
-    if (!response.ok) {
-      lastError = `gemini-${response.status}`;
-      continue;
-    }
-
-    const data = await response.json();
-    const geminiText = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
-
-    if (!geminiText) {
-      return {
-        content: `${getLocalReply(content, isGuest)}\n\n_Nota: Gemini no devolvió texto útil, así que usé el modo local._`,
-        source: "local",
-        error: "empty-response",
-      };
+    if (reply?.source === "gemini" && reply.content) {
+      return { content: reply.content, source: "gemini", error: null };
     }
 
     return {
-      content: geminiText,
-      source: "gemini",
-      error: null,
+      content: `${getLocalReply(content, isGuest)}\n\n_Nota: el asistente IA no está disponible en este momento, así que usé el modo local._`,
+      source: "local",
+      error: reply?.error || "unavailable",
     };
-    } catch {
-      lastError = "network";
-    }
+  } catch {
+    return {
+      content: `${getLocalReply(content, isGuest)}\n\n_Nota: no pude conectar con el asistente IA. Revisa que el servidor local esté activo._`,
+      source: "local",
+      error: "network",
+    };
   }
-
-  return {
-    content: `${getLocalReply(content, isGuest)}\n\n_Nota: no pude conectar con Gemini en este intento. Revisa la API key, el modelo y reinicia Vite si acabas de editar el .env._`,
-    source: "local",
-    error: lastError,
-  };
 };
 
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
-export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
+export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, user = null }) {
   const [messages, setMessages]     = useState([]);
   const [input, setInput]           = useState("");
   const [loading, setLoading]       = useState(false);
@@ -573,12 +471,19 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
   const nextMessageId  = useRef(1);
-  const displayName = isGuest ? "Juan Pérez" : "Cuenta nueva";
-  const firstName = isGuest ? "Juan" : "Cuenta";
-  const avatar = isGuest ? "JP" : "CN";
-  const planLabel = isGuest ? "⭐ Premium" : "Plan gratuito";
+  const displayName = user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva");
+  const firstName = user?.firstName || displayName.split(" ")[0] || "Cuenta";
+  const avatar = user?.avatar || `${(user?.firstName?.[0] || displayName[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2);
+  const planLabel = isGuest ? "⭐ Premium" : (user?.plan === "premium" ? "⭐ Premium" : "Plan gratuito");
   const suggestions = isGuest ? SUGERENCIAS_INIT : SUGERENCIAS_EMPTY;
-  const hasGeminiConfigured = Boolean(GEMINI_API_KEY);
+  const [realGoals, setRealGoals] = useState([]);
+
+  useEffect(() => {
+    if (isGuest) return;
+    let alive = true;
+    void loadStoredGoals([]).then((data) => alive && setRealGoals(Array.isArray(data) ? data : []));
+    return () => { alive = false; };
+  }, [isGuest]);
 
   const handleNavClick = (id) => {
     setActiveNav(id);
@@ -595,7 +500,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
 
     if (pendingExpense) {
       if (["si", "sí", "confirmo", "confirmar", "guardalo", "guárdalo", "guardar"].some((word) => text.includes(normalizeText(word)))) {
-        const saved = await addStoredExpense(pendingExpense, isGuest ? DEMO_EXPENSES : []);
+        const saved = await addStoredExpense(pendingExpense, []);
         setPendingExpense(null);
         return {
           handled: true,
@@ -759,9 +664,8 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false }) {
           {/* CONTEXT BAR */}
           <div className="context-bar">
             <span className="ctx-label">Contexto activo:</span>
-            <span className="ctx-item" title={hasGeminiConfigured ? "Gemini conectado" : "Modo local sin API"}><span className="ctx-dot"/>{" "}{isGuest ? "Perfil de Juan" : "Cuenta nueva"}</span>
-            <span className="ctx-item">💰 Saldo {isGuest ? "S/ 1,700" : "S/ 0"}</span>
-            <span className="ctx-item">🎯 {isGuest ? "4 metas activas" : "0 metas"}</span>
+            <span className="ctx-item" title="Contexto financiero del usuario"><span className="ctx-dot"/>{" "}{isGuest ? "Perfil de Juan" : firstName}</span>
+            <span className="ctx-item">🎯 {isGuest ? "4 metas activas" : `${realGoals.length} ${realGoals.length === 1 ? "meta activa" : "metas activas"}`}</span>
             <span className="ctx-item">📅 {currentPeriodLabel}</span>
           </div>
 

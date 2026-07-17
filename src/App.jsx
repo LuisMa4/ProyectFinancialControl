@@ -28,6 +28,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('login');
   const [account, setAccount] = useState(null);
   const [authReady, setAuthReady] = useState(false);
+  const isDemoAccount = account?.id === 1;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -98,14 +99,14 @@ export default function App() {
     <>
       {currentPage === 'login' && <LoginPage onRegister={goToRegister} onLoginSuccess={goToMainpage} />}
       {currentPage === 'register' && <RegisterPage onLogin={goToLogin} onRegisterSuccess={goToMainpage} />}
-      {currentPage === 'mainpage' && <MainPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
-      {currentPage === 'dashboard' && <MainPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
-      {currentPage === 'gastos' && <GastosPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
-      {currentPage === 'metas' && <MetasPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
-      {currentPage === 'calendario' && <CalendarioPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
-      {currentPage === 'chatbot' && <ChatbotPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
-      {currentPage === 'planes' && <PlanesPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} />}
-      {currentPage === 'perfil' && <PerfilPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={true} registeredAt={account?.registeredAt || null} />}
+      {currentPage === 'mainpage' && <MainPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
+      {currentPage === 'dashboard' && <MainPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
+      {currentPage === 'gastos' && <GastosPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
+      {currentPage === 'metas' && <MetasPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
+      {currentPage === 'calendario' && <CalendarioPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
+      {currentPage === 'chatbot' && <ChatbotPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
+      {currentPage === 'planes' && <PlanesPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
+      {currentPage === 'perfil' && <PerfilPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} registeredAt={account?.registeredAt || null} onUserUpdate={setAccount} />}
     </>
   );
 }

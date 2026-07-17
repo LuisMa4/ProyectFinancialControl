@@ -711,3 +711,15 @@ body {
   .card-form-grid{ grid-template-columns:1fr; }
   .saved-card{ flex-direction:column; }
 }
+
+/* Estado vacío dentro de cards */
+.card-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted, #8AADA9);
+  background: var(--mint, #EDF8F7);
+  border: 1px dashed var(--border, #DDE9E7);
+  border-radius: 12px;
+  line-height: 1.5;
+}

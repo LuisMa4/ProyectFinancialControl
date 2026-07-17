@@ -303,7 +303,7 @@ const FAQS = [
   },
 ];
 
-export default function PlanesPage({ onNavigate, onLogout, isGuest = false }) {
+export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user = null }) {
   const [billing, setBilling]       = useState("mensual"); // mensual | anual
   const [activeNav, setActiveNav]   = useState("perfil");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -317,8 +317,8 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false }) {
   const precioMensual = 10;
   const precioAnual   = 8; // por mes
   const precio = billing === "anual" ? precioAnual : precioMensual;
-  const displayName = isGuest ? "Juan Pérez" : "Cuenta nueva";
-  const avatar = isGuest ? "JP" : "CN";
+  const displayName = user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva");
+  const avatar = user?.avatar || `${(user?.firstName?.[0] || displayName[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2);
 
   const handleSelect = (plan) => {
     if (plan === "free") {

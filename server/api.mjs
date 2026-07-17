@@ -8,10 +8,17 @@ import crypto from "node:crypto";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = resolve(__dirname, "..");
-const dbDir = resolve(projectRoot, "db");
+
+try {
+  process.loadEnvFile(resolve(projectRoot, ".env"));
+} catch {
+  // sin .env: el chat usará el modo local
+}
+
+const dbDir = process.env.FINVERDE_DB_DIR ? resolve(process.env.FINVERDE_DB_DIR) : resolve(projectRoot, "db");
 const dbPath = resolve(dbDir, "financial_control.sqlite");
-const schemaPath = resolve(dbDir, "schema.sql");
-const seedPath = resolve(dbDir, "seed.sql");
+const schemaPath = resolve(projectRoot, "db", "schema.sql");
+const seedPath = resolve(projectRoot, "db", "seed.sql");
 
 if (!existsSync(dbDir)) {
   mkdirSync(dbDir, { recursive: true });
@@ -81,7 +88,7 @@ const json = (res, statusCode, payload) => {
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
   });
   res.end(body);
@@ -197,6 +204,13 @@ const getUserByToken = (token) => {
   return { user, session: normalizeSessionRow(session) };
 };
 
+const getCurrentUserFromRequest = (req) => {
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  if (!token) return null;
+  return getUserByToken(token)?.user || null;
+};
+
 const createSession = (userId, rememberMe = false) => {
   const token = createToken();
   db.prepare(`
@@ -208,11 +222,11 @@ const createSession = (userId, rememberMe = false) => {
 
 const completeAuth = (res, user, token) => json(res, 200, { token, user: normalizeUserRow(user) });
 
-const getCards = () => db.prepare("SELECT * FROM payment_cards WHERE user_id = 1 ORDER BY is_primary DESC, id DESC").all().map(normalizeCardRow);
-const getExpenses = () => db.prepare("SELECT * FROM transactions WHERE user_id = 1 AND type = 'expense' ORDER BY transaction_date DESC, id DESC").all().map(normalizeExpenseRow);
-const getGoals = () => {
-  const goals = db.prepare("SELECT * FROM savings_goals WHERE user_id = 1 ORDER BY id ASC").all();
-  const contributions = db.prepare("SELECT goal_id, transaction_date, amount FROM transactions WHERE user_id = 1 AND type = 'goal_contribution' ORDER BY transaction_date ASC, id ASC").all();
+const getCards = (userId) => db.prepare("SELECT * FROM payment_cards WHERE user_id = ? ORDER BY is_primary DESC, id DESC").all(userId).map(normalizeCardRow);
+const getExpenses = (userId) => db.prepare("SELECT * FROM transactions WHERE user_id = ? AND type = 'expense' ORDER BY transaction_date DESC, id DESC").all(userId).map(normalizeExpenseRow);
+const getGoals = (userId) => {
+  const goals = db.prepare("SELECT * FROM savings_goals WHERE user_id = ? ORDER BY id ASC").all(userId);
+  const contributions = db.prepare("SELECT goal_id, transaction_date, amount FROM transactions WHERE user_id = ? AND type = 'goal_contribution' ORDER BY transaction_date ASC, id ASC").all(userId);
   return goals.map((goal) => {
     const history = contributions
       .filter((item) => item.goal_id === goal.id)
@@ -240,51 +254,283 @@ const getGoals = () => {
   });
 };
 
-const replaceCards = (cards) => {
+const normalizeGoalRow = (row) => ({
+  id: row.id,
+  nombre: row.name,
+  icon: row.icon,
+  color: row.color,
+  meta: Number(row.target_amount),
+  actual: Number(row.current_amount),
+  aporteMensual: Number(row.monthly_contribution),
+  fechaLimite: row.due_date,
+  prioridad: row.priority,
+  descripcion: row.description,
+  historial: [],
+  compartida: Boolean(row.is_shared),
+  shareLink: row.share_code || "",
+});
+
+const normalizeEventRow = (row) => ({
+  id: row.id,
+  tipo: row.event_type,
+  desc: row.title,
+  monto: Number(row.amount),
+  dia: Number(row.day_of_month),
+  icono: row.icon,
+  color: row.color,
+  recurrente: Boolean(row.is_recurring),
+});
+
+const toEventRecord = (event) => ({
+  event_type: event.tipo || event.event_type || "pago",
+  title: event.desc || event.title || "Evento",
+  amount: Number(event.monto ?? event.amount ?? 0),
+  day_of_month: Number(event.dia ?? event.day_of_month ?? 1),
+  icon: event.icono || event.icon || "💳",
+  color: event.color || (event.tipo === "ingreso" ? "#4CAF7D" : event.tipo === "meta" ? "#7EC8C0" : "#E07070"),
+  is_recurring: Number(Boolean(event.recurrente ?? event.is_recurring)),
+});
+
+const toGoalRecord = (goal) => ({
+  name: goal.nombre || goal.name || "Meta",
+  icon: goal.icon || "🎯",
+  color: goal.color || "#7EC8C0",
+  target_amount: Number(goal.meta ?? goal.target_amount ?? 0),
+  current_amount: Number(goal.actual ?? goal.current_amount ?? 0),
+  monthly_contribution: Number(goal.aporteMensual ?? goal.monthly_contribution ?? 0),
+  due_date: goal.fechaLimite || goal.due_date || null,
+  priority: goal.prioridad || goal.priority || "media",
+  description: goal.descripcion || goal.description || "",
+  is_shared: Number(Boolean(goal.compartida ?? goal.is_shared)),
+  share_code: goal.shareLink || goal.share_code || null,
+});
+
+const runInTransaction = (fn) => {
+  db.exec("BEGIN");
+  try {
+    fn();
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+};
+
+const replaceGoals = (userId, goals) => {
+  const insert = db.prepare(`
+    INSERT INTO savings_goals (
+      user_id, name, icon, color, target_amount, current_amount, monthly_contribution,
+      due_date, priority, description, is_shared, share_code
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const applyItems = (items) => runInTransaction(() => {
+    db.prepare("DELETE FROM savings_goals WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM transactions WHERE user_id = ? AND type = 'goal_contribution'").run(userId);
+    for (const goal of items) {
+      const record = toGoalRecord(goal);
+      insert.run(userId, record.name, record.icon, record.color, record.target_amount, record.current_amount, record.monthly_contribution, record.due_date, record.priority, record.description, record.is_shared, record.share_code);
+    }
+  });
+
+  applyItems(Array.isArray(goals) ? goals : []);
+  return getGoals(userId);
+};
+
+const getEvents = (userId) => db.prepare("SELECT * FROM calendar_events WHERE user_id = ? ORDER BY day_of_month ASC, id ASC").all(userId).map(normalizeEventRow);
+
+const replaceEvents = (userId, events) => {
+  const insert = db.prepare(`
+    INSERT INTO calendar_events (
+      user_id, event_type, title, amount, day_of_month, icon, color, is_recurring
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const applyItems = (items) => runInTransaction(() => {
+    db.prepare("DELETE FROM calendar_events WHERE user_id = ?").run(userId);
+    for (const event of items) {
+      const record = toEventRecord(event);
+      insert.run(userId, record.event_type, record.title, record.amount, record.day_of_month, record.icon, record.color, record.is_recurring);
+    }
+  });
+
+  applyItems(Array.isArray(events) ? events : []);
+  return getEvents(userId);
+};
+
+const replaceCards = (userId, cards) => {
   const insert = db.prepare(`
     INSERT INTO payment_cards (
       user_id, alias, holder_name, brand, last4, expiry_month, expiry_year, card_type, color, is_primary
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
-  const transaction = db.transaction((items) => {
-    db.prepare("DELETE FROM payment_cards WHERE user_id = 1").run();
+  const applyItems = (items) => runInTransaction(() => {
+    db.prepare("DELETE FROM payment_cards WHERE user_id = ?").run(userId);
     for (const card of items) {
       const record = toCardRecord(card);
-      insert.run(1, record.alias, record.holder_name, record.brand, record.last4, record.expiry_month, record.expiry_year, record.card_type, record.color, record.is_primary);
+      insert.run(userId, record.alias, record.holder_name, record.brand, record.last4, record.expiry_month, record.expiry_year, record.card_type, record.color, record.is_primary);
     }
   });
 
-  transaction(Array.isArray(cards) ? cards : []);
-  return getCards();
+  applyItems(Array.isArray(cards) ? cards : []);
+  return getCards(userId);
 };
 
-const replaceExpenses = (expenses) => {
+const replaceExpenses = (userId, expenses) => {
   const insert = db.prepare(`
     INSERT INTO transactions (
       user_id, category_id, goal_id, card_id, type, title, amount, transaction_date, note, is_recurring, icon, color
     ) VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
-  const transaction = db.transaction((items) => {
-    db.prepare("DELETE FROM transactions WHERE user_id = 1 AND type = 'expense'").run();
+  const applyItems = (items) => runInTransaction(() => {
+    db.prepare("DELETE FROM transactions WHERE user_id = ? AND type = 'expense'").run(userId);
     for (const expense of items) {
       const record = toExpenseRecord(expense);
-      insert.run(1, record.category_id, record.type, record.title, record.amount, record.transaction_date, record.note, record.is_recurring, record.icon, record.color);
+      insert.run(userId, record.category_id, record.type, record.title, record.amount, record.transaction_date, record.note, record.is_recurring, record.icon, record.color);
     }
   });
 
-  transaction(Array.isArray(expenses) ? expenses : []);
-  return getExpenses();
+  applyItems(Array.isArray(expenses) ? expenses : []);
+  return getExpenses(userId);
 };
 
-const server = createServer(async (req, res) => {
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+
+const monthKey = (date) => String(date).slice(0, 7);
+
+const buildFinancialContext = (user, language = "es") => {
+  const expenses = getExpenses(user.id);
+  const goals = getGoals(user.id);
+  const events = getEvents(user.id);
+  const currency = user.currency || "PEN";
+  const symbol = currency === "PEN" ? "S/" : currency;
+  const currentMonth = monthKey(new Date().toISOString());
+  const monthExpenses = expenses.filter((item) => monthKey(item.fecha) === currentMonth);
+  const monthTotal = monthExpenses.reduce((total, item) => total + item.monto, 0);
+  const totalSaved = goals.reduce((total, goal) => total + Math.min(goal.actual, goal.meta), 0);
+  const budget = Number(user.monthly_budget || 0);
+
+  const byCategory = {};
+  for (const item of monthExpenses) {
+    byCategory[item.cat] = (byCategory[item.cat] || 0) + item.monto;
+  }
+
+  const fmt = (value) => `${symbol} ${Number(value).toFixed(2)}`;
+  const isEn = language === "en";
+
+  const lines = [];
+  if (isEn) {
+    lines.push("You are Fina, the personal finance assistant of Savia, a personal finance management app.");
+    lines.push("Your role is to help the user understand their finances, give personalized advice and answer questions about their financial situation.");
+    lines.push(`USER DATA (${user.first_name} ${user.last_name}):`);
+  } else {
+    lines.push("Eres Fina, la asistente financiera personal de Savia, una aplicación de gestión de finanzas personales.");
+    lines.push("Tu rol es ayudar al usuario a entender sus finanzas, dar consejos personalizados y responder preguntas sobre su situación económica.");
+    lines.push(`DATOS DEL USUARIO (${user.first_name} ${user.last_name}):`);
+  }
+
+  lines.push(isEn ? `- Monthly budget: ${budget ? fmt(budget) : "not set"}` : `- Presupuesto mensual: ${budget ? fmt(budget) : "sin definir"}`);
+  lines.push(isEn ? `- Spending this month: ${fmt(monthTotal)} (${monthExpenses.length} recorded expenses)` : `- Gastos de este mes: ${fmt(monthTotal)} (${monthExpenses.length} gastos registrados)`);
+  lines.push(isEn ? `- Total saved toward goals: ${fmt(totalSaved)}` : `- Total ahorrado en metas: ${fmt(totalSaved)}`);
+
+  if (goals.length) {
+    lines.push(isEn ? "ACTIVE GOALS:" : "METAS ACTIVAS:");
+    for (const goal of goals) {
+      const pct = goal.meta ? Math.round((goal.actual / goal.meta) * 100) : 0;
+      lines.push(`- ${goal.nombre}: ${fmt(goal.actual)} / ${fmt(goal.meta)} (${pct}%)`);
+    }
+  } else {
+    lines.push(isEn ? "The user has no savings goals yet. Help them define their first one." : "El usuario aún no tiene metas de ahorro. Ayúdalo a definir la primera.");
+  }
+
+  const categoryEntries = Object.entries(byCategory);
+  if (categoryEntries.length) {
+    lines.push(isEn ? "SPENDING BY CATEGORY (this month):" : "GASTOS POR CATEGORÍA (este mes):");
+    for (const [category, total] of categoryEntries) {
+      lines.push(`- ${category}: ${fmt(total)}`);
+    }
+  }
+
+  if (events.length) {
+    lines.push(isEn ? "MONTHLY CALENDAR EVENTS:" : "EVENTOS DEL CALENDARIO MENSUAL:");
+    for (const event of events.slice(0, 12)) {
+      lines.push(`- ${event.desc}: ${fmt(event.monto)} (${isEn ? "day" : "día"} ${event.dia}, ${event.tipo})`);
+    }
+  }
+
+  if (!expenses.length && !goals.length && !events.length) {
+    lines.push(isEn
+      ? "The account is brand new with no data. Suggest first steps: initial categories, realistic budgets and a first savings goal. Do not invent personal financial figures."
+      : "La cuenta es nueva y no tiene datos. Sugiere primeros pasos: categorías iniciales, presupuestos realistas y una primera meta de ahorro. No inventes datos financieros personales.");
+  }
+
+  lines.push(isEn
+    ? "ALWAYS answer in English, warm and concise, with moderate emoji use. Use simple markdown (bold, lists) when it helps. If asked about non-finance topics, kindly redirect. Max 200 words unless a detailed analysis is requested."
+    : "Responde SIEMPRE en español, de forma cálida y concisa, con emojis moderados. Usa formato markdown simple (negritas, listas) cuando ayude. Si el usuario pregunta algo ajeno a finanzas, redirígelo amablemente. Máximo 200 palabras salvo que pida un análisis detallado.");
+
+  return lines.join("\n");
+};
+
+const callGemini = async ({ systemPrompt, messages }) => {
+  if (!GEMINI_API_KEY) {
+    return { content: "", source: "local", error: "missing-api-key" };
+  }
+
+  const contents = messages.slice(-10).map((message) => ({
+    role: message.role === "assistant" ? "model" : "user",
+    parts: [{ text: String(message.content || "") }],
+  }));
+
+  const requestBody = JSON.stringify({
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents,
+    generationConfig: { temperature: 0.7, topP: 0.9, maxOutputTokens: 700 },
+  });
+
+  const modelsToTry = [...new Set([GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS])];
+  let lastError = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": GEMINI_API_KEY,
+        },
+        body: requestBody,
+      });
+
+      if (!response.ok) {
+        lastError = `gemini-${response.status}`;
+        continue;
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
+      if (text) {
+        return { content: text, source: "gemini", error: null };
+      }
+      lastError = "empty-response";
+    } catch {
+      lastError = "network";
+    }
+  }
+
+  return { content: "", source: "local", error: lastError };
+};
+
+const handleRequest = async (req, res) => {
   if (!req.url) return notFound(res);
 
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     });
     res.end();
@@ -380,25 +626,117 @@ const server = createServer(async (req, res) => {
     return json(res, 200, { ok: true });
   }
 
+  if (url.pathname === "/api/user" && req.method === "PUT") {
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    const body = await readBody(req);
+
+    const firstName = String(body?.firstName ?? currentUser.first_name).trim() || currentUser.first_name;
+    const lastName = String(body?.lastName ?? currentUser.last_name).trim() || currentUser.last_name;
+    const phone = String(body?.phone ?? currentUser.phone ?? "").trim();
+    const currency = String(body?.currency ?? currentUser.currency).trim() || "PEN";
+    const language = body?.language === "en" ? "en" : body?.language === "es" ? "es" : currentUser.language;
+    const timezone = String(body?.timezone ?? currentUser.timezone).trim() || currentUser.timezone;
+    const avatar = String(body?.avatar ?? currentUser.avatar).trim() || currentUser.avatar;
+    const avatarColor = String(body?.avatarColor ?? currentUser.avatar_color).trim() || currentUser.avatar_color;
+    const monthlyBudget = Number.isFinite(Number(body?.monthlyBudget)) ? Number(body.monthlyBudget) : Number(currentUser.monthly_budget || 0);
+
+    db.prepare(`
+      UPDATE users SET first_name = ?, last_name = ?, phone = ?, currency = ?, language = ?,
+        timezone = ?, avatar = ?, avatar_color = ?, monthly_budget = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(firstName, lastName, phone, currency, language, timezone, avatar, avatarColor, monthlyBudget, currentUser.id);
+
+    const updated = db.prepare("SELECT * FROM users WHERE id = ?").get(currentUser.id);
+    return json(res, 200, { user: normalizeUserRow(updated) });
+  }
+
+  if (url.pathname === "/api/auth/password" && req.method === "POST") {
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    const body = await readBody(req);
+    const currentPassword = String(body?.currentPassword || "");
+    const newPassword = String(body?.newPassword || "");
+
+    if (newPassword.length < 8) {
+      return json(res, 400, { error: "La contraseña nueva debe tener al menos 8 caracteres" });
+    }
+
+    const expected = currentUser.password_hash || "";
+    const candidate = currentUser.password_salt ? hashPassword(currentPassword, currentUser.password_salt) : hashValue(currentPassword);
+    if (candidate !== expected) {
+      return json(res, 401, { error: "La contraseña actual no es correcta" });
+    }
+
+    const salt = createSalt();
+    db.prepare("UPDATE users SET password_hash = ?, password_salt = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .run(hashPassword(newPassword, salt), salt, currentUser.id);
+    return json(res, 200, { ok: true });
+  }
+
   if (url.pathname === "/api/user") {
-    return json(res, 200, normalizeUserRow(getUser()));
+    const user = getCurrentUserFromRequest(req) || getUser();
+    return json(res, 200, normalizeUserRow(user));
   }
 
   if (url.pathname === "/api/cards") {
-    if (req.method === "GET") return json(res, 200, getCards());
-    if (req.method === "PUT") return json(res, 200, replaceCards((await readBody(req))?.cards || []));
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (req.method === "GET") return json(res, 200, getCards(currentUser.id));
+    if (req.method === "PUT") return json(res, 200, replaceCards(currentUser.id, (await readBody(req))?.cards || []));
   }
 
   if (url.pathname === "/api/expenses") {
-    if (req.method === "GET") return json(res, 200, getExpenses());
-    if (req.method === "PUT") return json(res, 200, replaceExpenses((await readBody(req))?.expenses || []));
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (req.method === "GET") return json(res, 200, getExpenses(currentUser.id));
+    if (req.method === "PUT") return json(res, 200, replaceExpenses(currentUser.id, (await readBody(req))?.expenses || []));
   }
 
   if (url.pathname === "/api/goals" && req.method === "GET") {
-    return json(res, 200, getGoals());
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    return json(res, 200, getGoals(currentUser.id));
+  }
+
+  if (url.pathname === "/api/goals" && req.method === "PUT") {
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    return json(res, 200, replaceGoals(currentUser.id, (await readBody(req))?.goals || []));
+  }
+
+  if (url.pathname === "/api/chat" && req.method === "POST") {
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    const body = await readBody(req);
+    const messages = Array.isArray(body?.messages) ? body.messages : [];
+    const language = body?.language === "en" ? "en" : "es";
+    if (!messages.length) return json(res, 400, { error: "Sin mensajes" });
+
+    const systemPrompt = buildFinancialContext(currentUser, language);
+    const reply = await callGemini({ systemPrompt, messages });
+    return json(res, 200, reply);
+  }
+
+  if (url.pathname === "/api/events") {
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (req.method === "GET") return json(res, 200, getEvents(currentUser.id));
+    if (req.method === "PUT") return json(res, 200, replaceEvents(currentUser.id, (await readBody(req))?.events || []));
   }
 
   return notFound(res);
+};
+
+const server = createServer(async (req, res) => {
+  try {
+    await handleRequest(req, res);
+  } catch (error) {
+    console.error("API error:", error);
+    if (!res.headersSent) {
+      json(res, 500, { error: "Error interno del servidor" });
+    }
+  }
 });
 
 server.listen(port, "127.0.0.1", () => {

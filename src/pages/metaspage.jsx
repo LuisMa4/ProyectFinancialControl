@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import SidebarCards from "../components/SidebarCards";
+import { loadStoredGoals, writeStoredGoals } from "../utils/goalsStorage";
 
 /* ─────────────────────────────────────────
    DATA
@@ -331,8 +332,8 @@ const MetaRing = ({ pct, color, size = 90 }) => {
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
-export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
-  const [metas, setMetas]         = useState(() => isGuest ? METAS_INIT : []);
+export default function MetasPage({ onLogout, onNavigate, isGuest = false, user = null }) {
+  const [metas, setMetas]         = useState(() => []);
   const [activeNav, setActiveNav] = useState("metas");
   const [viewMode, setViewMode]   = useState("grid"); // grid | list
   const [filtro, setFiltro]       = useState("todas"); // todas | activas | completadas
@@ -357,6 +358,10 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
   };
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  useEffect(() => {
+    void loadStoredGoals(isGuest ? METAS_INIT : []).then(setMetas);
+  }, [isGuest]);
 
   const copyShareLink = async (link) => {
     try {
@@ -398,27 +403,33 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
       compartida: Boolean(form.compartida),
       shareLink: form.compartida ? (form.shareLink || makeShareLink(nextId)) : "",
     };
-    if (editMeta) {
-      setMetas(prev => prev.map(m => m.id === editMeta ? { ...m, ...entry } : m));
-      showToast("✓ Meta actualizada");
-    } else {
-      setMetas(prev => [...prev, { id: nextId, ...entry, historial: [] }]);
-      showToast("✓ Meta creada");
-    }
+    const next = editMeta
+      ? metas.map(m => m.id === editMeta ? { ...m, ...entry } : m)
+      : [...metas, { id: nextId, ...entry, historial: [] }];
+    setMetas(next);
+    void writeStoredGoals(next);
+    showToast(editMeta ? "✓ Meta actualizada" : "✓ Meta creada");
     setModalNueva(false);
   };
 
-  const eliminarMeta = (id) => { setMetas(prev => prev.filter(m => m.id !== id)); showToast("✓ Meta eliminada"); };
+  const eliminarMeta = (id) => {
+    const next = metas.filter(m => m.id !== id);
+    setMetas(next);
+    void writeStoredGoals(next);
+    showToast("✓ Meta eliminada");
+  };
 
   const hacerAbono = () => {
     const n = +montoAbono;
     if (!n || n <= 0) { showToast("⚠ Ingresa un monto válido"); return; }
     const hoy = new Date();
     const mes = hoy.toLocaleDateString("es-PE", { month: "short" });
-    setMetas(prev => prev.map(m => m.id === modalAbonar
+    const next = metas.map(m => m.id === modalAbonar
       ? { ...m, actual: Math.min(m.actual + n, m.meta * 1.5), historial: [...m.historial, { mes, aporte: n }] }
       : m
-    ));
+    );
+    setMetas(next);
+    void writeStoredGoals(next);
     showToast(`✓ Abono de ${fmt(n)} registrado`);
     setMontoAbono("");
     setModalAbonar(null);
@@ -671,10 +682,10 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false }) {
           </nav>
           <div className="sb-footer">
             <div className="user-chip">
-              <div className="user-av">{isGuest ? "JP" : "CN"}</div>
+              <div className="user-av">{user?.avatar || `${(user?.firstName?.[0] || user?.fullName?.[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2)}</div>
               <div style={{ flex: 1 }}>
-                <div className="user-nm">{isGuest ? "Juan Pérez" : "Cuenta nueva"}</div>
-                <div className="user-pl">{isGuest ? "⭐ Premium" : "Plan gratuito"}</div>
+                <div className="user-nm">{user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva")}</div>
+                <div className="user-pl">{isGuest ? "⭐ Premium" : (user?.plan === "premium" ? "⭐ Premium" : "Plan gratuito")}</div>
               </div>
               {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
             </div>

@@ -1,16 +1,19 @@
-const API_BASE = "/api";
+import { readAuthToken } from "./authToken";
 
-const buildJsonHeaders = () => ({
-  "Content-Type": "application/json",
-});
+const API_BASE = typeof window !== "undefined" && window.finverde?.apiBase
+  ? window.finverde.apiBase
+  : "/api";
 
 export async function apiRequest(path, options = {}) {
+  const token = readAuthToken();
+  const { headers: extraHeaders, ...rest } = options;
   const response = await fetch(`${API_BASE}${path}`, {
+    ...rest,
     headers: {
-      ...buildJsonHeaders(),
-      ...(options.headers || {}),
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(extraHeaders || {}),
     },
-    ...options,
   });
 
   if (!response.ok) {

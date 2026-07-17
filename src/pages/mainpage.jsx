@@ -5,6 +5,9 @@ import {
 } from "recharts";
 import SidebarCards from "../components/SidebarCards";
 import { loadStoredCards, readStoredCards, writeStoredCards } from "../utils/cardsStorage";
+import { loadStoredExpenses, EXPENSE_CATEGORIES } from "../utils/expensesStorage";
+import { loadStoredGoals } from "../utils/goalsStorage";
+import { apiRequest } from "../utils/apiClient";
 import "./mainpage.css";
 
 const GASTOS_MES = [
@@ -224,6 +227,128 @@ const scaleCategories = (categories, total) => {
   }));
 };
 
+/* ── Datos reales: agregaciones desde la API ── */
+
+const toISODate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+
+const monthlyIncomeFromEvents = (events) =>
+  events.filter((event) => event.tipo === "ingreso").reduce((total, event) => total + event.monto, 0);
+
+const buildRealPeriodData = (expenses, events) => {
+  const today = new Date();
+  const incomePerMonth = monthlyIncomeFromEvents(events);
+
+  const daily = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const iso = toISODate(date);
+    const gastos = expenses.filter((item) => item.fecha === iso).reduce((total, item) => total + item.monto, 0);
+    const ingresos = events
+      .filter((event) => event.tipo === "ingreso" && event.dia === date.getDate())
+      .reduce((total, event) => total + event.monto, 0);
+    daily.push({ label: capitalize(date.toLocaleDateString("es-PE", { weekday: "short" })), gastos, ingresos });
+  }
+
+  const weekly = [];
+  for (let week = 3; week >= 0; week--) {
+    const end = new Date(today);
+    end.setDate(today.getDate() - week * 7);
+    const start = new Date(end);
+    start.setDate(end.getDate() - 6);
+    const startISO = toISODate(start);
+    const endISO = toISODate(end);
+    const gastos = expenses
+      .filter((item) => item.fecha >= startISO && item.fecha <= endISO)
+      .reduce((total, item) => total + item.monto, 0);
+    const ingresos = events
+      .filter((event) => event.tipo === "ingreso" && (
+        (start.getDate() <= end.getDate())
+          ? event.dia >= start.getDate() && event.dia <= end.getDate()
+          : event.dia >= start.getDate() || event.dia <= end.getDate()
+      ))
+      .reduce((total, event) => total + event.monto, 0);
+    weekly.push({ label: `Sem ${4 - week}`, gastos, ingresos });
+  }
+
+  const monthly = [];
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const gastos = expenses
+      .filter((item) => String(item.fecha).slice(0, 7) === key)
+      .reduce((total, item) => total + item.monto, 0);
+    monthly.push({
+      label: capitalize(date.toLocaleDateString("es-PE", { month: "short" })),
+      gastos,
+      ingresos: incomePerMonth,
+    });
+  }
+
+  return { daily, weekly, monthly };
+};
+
+const buildRealCategories = (expenses, periodFilter) => {
+  const filtered = periodFilter ? expenses.filter(periodFilter) : expenses;
+  return EXPENSE_CATEGORIES
+    .map((category) => ({
+      name: category.name,
+      icon: category.icon,
+      color: category.color,
+      value: Math.round(filtered
+        .filter((item) => item.cat === category.id)
+        .reduce((total, item) => total + item.monto, 0)),
+    }))
+    .filter((category) => category.value > 0);
+};
+
+const buildRealTransactions = (expenses) =>
+  [...expenses]
+    .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
+    .slice(0, 7)
+    .map((item) => {
+      const category = EXPENSE_CATEGORIES.find((cat) => cat.id === item.cat);
+      return {
+        id: item.id,
+        desc: item.desc,
+        cat: category?.name || "Otros",
+        icon: category?.icon || "📦",
+        monto: -item.monto,
+        fecha: new Date(`${item.fecha}T12:00:00`).toLocaleDateString("es-PE", { day: "numeric", month: "short" }),
+        tipo: "gasto",
+      };
+    });
+
+const buildRealUpcomingPayments = (events) => {
+  const today = new Date();
+  const currentDay = today.getDate();
+  return events
+    .filter((event) => event.tipo === "pago")
+    .map((event) => {
+      const nextDate = event.dia >= currentDay
+        ? new Date(today.getFullYear(), today.getMonth(), event.dia)
+        : new Date(today.getFullYear(), today.getMonth() + 1, event.dia);
+      const dias = Math.max(0, Math.round((nextDate - today) / (1000 * 60 * 60 * 24)));
+      return {
+        id: event.id,
+        desc: event.desc,
+        monto: event.monto,
+        fecha: capitalize(nextDate.toLocaleDateString("es-PE", { day: "2-digit", month: "short" })),
+        dias,
+        icon: event.icono || "💳",
+      };
+    })
+    .sort((a, b) => a.dias - b.dias)
+    .slice(0, 5);
+};
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -240,7 +365,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
+export default function Dashboard({ onLogout, onNavigate, isGuest = false, user = null }) {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [periodo, setPeriodo] = useState("Mes");
   const [showAlert, setShowAlert] = useState(true);
@@ -250,16 +375,44 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
   const [cardForm, setCardForm] = useState(CARD_FORM_DEF);
   const [cardErrors, setCardErrors] = useState({});
   const [pendingCard, setPendingCard] = useState(null);
+  const [expenses, setExpenses] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    if (isGuest) return;
+    let alive = true;
+    void loadStoredExpenses([]).then((data) => alive && setExpenses(Array.isArray(data) ? data : []));
+    void loadStoredGoals([]).then((data) => alive && setGoals(Array.isArray(data) ? data : []));
+    void apiRequest("/events").then((data) => alive && setEvents(Array.isArray(data) ? data : [])).catch(() => null);
+    return () => { alive = false; };
+  }, [isGuest]);
 
   const activePeriod = PERIOD_DATA[periodo];
-  const periodData = isGuest ? activePeriod.data : [];
-  const ingresosMes = isGuest ? sumPeriod(periodData, "ingresos") : 0;
-  const totalGastos = isGuest ? sumPeriod(periodData, "gastos") : 0;
-  const categorias = isGuest ? scaleCategories(CATEGORIAS, totalGastos) : [];
-  const transacciones = isGuest ? TRANSACCIONES : [];
-  const metas = isGuest ? METAS : [];
-  const pagosProximos = isGuest ? PAGOS_PROXIMOS : [];
-  const presupuesto = isGuest ? activePeriod.budget : 0;
+  const realPeriods = buildRealPeriodData(expenses, events);
+  const realPeriodData = periodo === "Días" ? realPeriods.daily : periodo === "Mes" ? realPeriods.weekly : realPeriods.monthly;
+  const periodData = isGuest ? activePeriod.data : realPeriodData;
+  const ingresosMes = sumPeriod(periodData, "ingresos");
+  const totalGastos = sumPeriod(periodData, "gastos");
+  const monthlyBudget = Number(user?.monthlyBudget || 0);
+  const realBudget = periodo === "Días" ? (monthlyBudget / 30) * 7 : periodo === "Mes" ? monthlyBudget : monthlyBudget * 6;
+
+  const todayRef = new Date();
+  const periodStart = new Date(todayRef);
+  if (periodo === "Días") periodStart.setDate(todayRef.getDate() - 6);
+  else if (periodo === "Mes") periodStart.setDate(todayRef.getDate() - 27);
+  else periodStart.setMonth(todayRef.getMonth() - 5, 1);
+  const periodStartISO = toISODate(periodStart);
+
+  const categorias = isGuest
+    ? scaleCategories(CATEGORIAS, totalGastos)
+    : buildRealCategories(expenses, (item) => item.fecha >= periodStartISO);
+  const transacciones = isGuest ? TRANSACCIONES : buildRealTransactions(expenses);
+  const metas = isGuest
+    ? METAS
+    : goals.map((goal) => ({ id: goal.id, name: goal.nombre, icon: goal.icon, meta: goal.meta, actual: goal.actual, color: goal.color, fechaCreacion: goal.fechaCreacion || null }));
+  const pagosProximos = isGuest ? PAGOS_PROXIMOS : buildRealUpcomingPayments(events);
+  const presupuesto = isGuest ? activePeriod.budget : Math.round(realBudget);
   const totalAhorrado = metas.reduce((a, m) => a + Math.min(m.actual, m.meta), 0);
   const pctUsado = presupuesto ? Math.round((totalGastos / presupuesto) * 100) : 0;
   const pctLibre = Math.max(0, Math.min(100, 100 - pctUsado));
@@ -269,9 +422,9 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
   const metasTrend = getGoalsTrend(metas);
   const todayLabel = getTodayLabel();
   const greeting = getGreeting();
-  const displayName = isGuest ? "Juan Pérez" : "Cuenta nueva";
-  const firstName = isGuest ? "Juan" : "Cuenta";
-  const avatar = isGuest ? "JP" : "CN";
+  const displayName = user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva");
+  const firstName = user?.firstName || displayName.split(" ")[0] || "Cuenta";
+  const avatar = user?.avatar || `${(user?.firstName?.[0] || displayName[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2);
   const planLabel = isGuest ? "⭐ Premium" : "Plan gratuito";
   const currentCardBrand = getCardBrand(cardForm.numero);
 
@@ -529,7 +682,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
         </header>
 
         <div className="content">
-          {showAlert && isGuest && (
+          {showAlert && presupuesto > 0 && pctUsado >= 80 && (
             <div className="alert-banner">
               <span className="alert-icon">⚠️</span>
               <div className="alert-body">
@@ -680,6 +833,9 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
                 <div className="card-badge">{activePeriod.label}</div>
               </div>
               <div className="tx-list">
+                {transacciones.length === 0 && (
+                  <div className="card-empty">Aún no tienes movimientos. Registra tu primer gasto para verlo aquí.</div>
+                )}
                 {transacciones.map((tx) => (
                   <div className="tx-item" key={tx.id}>
                     <div className="tx-ico">{tx.icon}</div>
@@ -704,6 +860,9 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
                 </div>
               </div>
               <div className="meta-list">
+                {metas.length === 0 && (
+                  <div className="card-empty">Todavía no tienes metas de ahorro. Crea la primera y sigue su progreso aquí.</div>
+                )}
                 {metas.map((m) => {
                   const pct = Math.round((m.actual / m.meta) * 100);
                   return (
@@ -733,10 +892,13 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
               <div className="card-header">
                 <div>
                   <div className="card-title">Próximos Pagos</div>
-                  <div className="card-sub">Vencimientos en junio</div>
+                  <div className="card-sub">Vencimientos de {new Date().toLocaleDateString("es-PE", { month: "long" })}</div>
                 </div>
               </div>
               <div className="pagos-list">
+                {pagosProximos.length === 0 && (
+                  <div className="card-empty">Sin pagos programados. Agrega eventos de pago en el Calendario.</div>
+                )}
                 {pagosProximos.map((p) => (
                   <div className="pago-item" key={p.id}>
                     <div className="pago-ico">{p.icon}</div>
@@ -754,8 +916,9 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
                 ))}
               </div>
 
+              {pagosProximos.length > 0 && (
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>Total comprometido junio</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>Total comprometido en {new Date().toLocaleDateString("es-PE", { month: "long" })}</div>
                 <ResponsiveContainer width="100%" height={80}>
                   <BarChart data={pagosProximos.map((p) => ({ name: p.desc, monto: p.monto }))} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
@@ -767,6 +930,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false }) {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+              )}
             </div>
           </div>
         </div>
