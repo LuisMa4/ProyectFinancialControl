@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
-import SidebarCards from "../components/SidebarCards";
+import AppShell from "../components/AppShell";
+import { useI18n } from "../i18n/index.jsx";
 import { loadStoredGoals, writeStoredGoals } from "../utils/goalsStorage";
 
 /* ─────────────────────────────────────────
@@ -61,15 +62,6 @@ const METAS_INIT = [
       { mes: "Mar", aporte: 300 }, { mes: "Abr", aporte: 300 },
     ],
   },
-];
-
-const NAV_ITEMS = [
-  { id: "dashboard",  label: "Dashboard",  icon: "◉" },
-  { id: "gastos",     label: "Gastos",     icon: "💳" },
-  { id: "metas",      label: "Metas",      icon: "🎯" },
-  { id: "calendario", label: "Calendario", icon: "📅" },
-  { id: "chatbot",    label: "Chatbot IA", icon: "🤖" },
-  { id: "perfil",     label: "Mi Perfil",  icon: "👤" },
 ];
 
 const PRIORIDAD_CFG = {
@@ -333,8 +325,8 @@ const MetaRing = ({ pct, color, size = 90 }) => {
    COMPONENT
 ───────────────────────────────────────── */
 export default function MetasPage({ onLogout, onNavigate, isGuest = false, user = null }) {
+  const { t } = useI18n();
   const [metas, setMetas]         = useState(() => []);
-  const [activeNav, setActiveNav] = useState("metas");
   const [viewMode, setViewMode]   = useState("grid"); // grid | list
   const [filtro, setFiltro]       = useState("todas"); // todas | activas | completadas
   const [toast, setToast]         = useState(null);
@@ -353,7 +345,6 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
   const [montoAbono, setMontoAbono] = useState("");
 
   const handleNavClick = (id) => {
-    setActiveNav(id);
     if (onNavigate) onNavigate(id);
   };
 
@@ -662,60 +653,31 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
         </div>
       )}
 
-      {/* ── APP ── */}
-      <div className="app metas-app">
-        {/* SIDEBAR */}
-        <aside className="sidebar">
-          <div className="sb-brand">
-            <div className="sb-ico">💎</div>
-            <span className="sb-txt">Savia</span>
-          </div>
-          <nav className="sb-nav">
-            {NAV_ITEMS.map(item => (
-              <button key={item.id} className={`nav-item${activeNav === item.id ? " active" : ""}`}
-                onClick={() => handleNavClick(item.id)}>
-                <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-            <SidebarCards onManage={() => handleNavClick("dashboard")} />
-          </nav>
-          <div className="sb-footer">
-            <div className="user-chip">
-              <div className="user-av">{user?.avatar || `${(user?.firstName?.[0] || user?.fullName?.[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2)}</div>
-              <div style={{ flex: 1 }}>
-                <div className="user-nm">{user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva")}</div>
-                <div className="user-pl">{isGuest ? "⭐ Premium" : (user?.plan === "premium" ? "⭐ Premium" : "Plan gratuito")}</div>
-              </div>
-              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
+      <AppShell
+        active="metas"
+        onNavigate={handleNavClick}
+        onLogout={onLogout}
+        user={user}
+        isGuest={isGuest}
+        eyebrow={`${t("goals.subtitle")} · ${new Date().getFullYear()}`}
+        title={t("goals.title")}
+        headerRight={(
+          <>
+            <div className="view-toggle">
+              {[["todas","Todas"],["activas","Activas"],["completadas","✓ Listas"]].map(([k,l]) => (
+                <button key={k} className={`vt-btn${filtro===k?" on":""}`} onClick={() => setFiltro(k)}>{l}</button>
+              ))}
             </div>
-          </div>
-        </aside>
-
-        {/* MAIN */}
-        <div className="main">
-          <header className="header">
-            <div>
-              <div className="hd-eye">Gestión financiera · 2026</div>
-              <div className="hd-title">Metas de Ahorro</div>
+            <div className="view-toggle">
+              <button className={`vt-btn${viewMode==="grid"?" on":""}`} onClick={() => setViewMode("grid")}>▦</button>
+              <button className={`vt-btn${viewMode==="list"?" on":""}`} onClick={() => setViewMode("list")}>☰</button>
             </div>
-            <div className="hd-right">
-              {/* filtro tabs */}
-              <div className="view-toggle">
-                {[["todas","Todas"],["activas","Activas"],["completadas","✓ Listas"]].map(([k,l]) => (
-                  <button key={k} className={`vt-btn${filtro===k?" on":""}`} onClick={() => setFiltro(k)}>{l}</button>
-                ))}
-              </div>
-              <div className="view-toggle">
-                <button className={`vt-btn${viewMode==="grid"?" on":""}`} onClick={() => setViewMode("grid")}>▦</button>
-                <button className={`vt-btn${viewMode==="list"?" on":""}`} onClick={() => setViewMode("list")}>☰</button>
-              </div>
-              <button className="btn-primary" onClick={openNueva}>
-                <span style={{ fontSize: 16 }}>＋</span> Nueva meta
-              </button>
-            </div>
-          </header>
-
+            <button className="btn-primary" onClick={openNueva}>
+              <span style={{ fontSize: 16 }}>＋</span> {t("goals.new").replace("+ ", "")}
+            </button>
+          </>
+        )}
+      >
           <div className="content">
 
             {/* KPI STRIP */}
@@ -834,8 +796,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
               </div>
             )}
           </div>
-        </div>
-      </div>
+      </AppShell>
     </>
   );
 }

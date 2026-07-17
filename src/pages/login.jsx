@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { loginAccount, writeAuthToken } from "../utils/authStorage";
+import LanguageSwitcher from "../components/LanguageSwitcher";
+import { useI18n } from "../i18n/index.jsx";
 import "./login.css";
 
+const parseApiError = (message) => {
+  try { return JSON.parse(message)?.error || null; } catch { return null; }
+};
+
 export default function LoginPage({ onRegister, onLoginSuccess }) {
+  const { t, lang } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -13,10 +20,10 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
 
   const validate = () => {
     const errs = {};
-    if (!email.trim()) errs.email = "El correo es requerido";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "Correo inválido";
-    if (!password) errs.password = "La contraseña es requerida";
-    else if (password.length < 6) errs.password = "Mínimo 6 caracteres";
+    if (!email.trim()) errs.email = lang === "en" ? "Email is required" : "El correo es requerido";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = lang === "en" ? "Invalid email" : "Correo inválido";
+    if (!password) errs.password = lang === "en" ? "Password is required" : "La contraseña es requerida";
+    else if (password.length < 6) errs.password = lang === "en" ? "At least 6 characters" : "Mínimo 6 caracteres";
     return errs;
   };
 
@@ -32,13 +39,13 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
     try {
       const response = await loginAccount({ email, password, rememberMe: remember });
       writeAuthToken(response.token);
-      setToast("¡Bienvenido! Ingresando al sistema...");
+      setToast(lang === "en" ? "Welcome! Signing you in..." : "¡Bienvenido! Ingresando al sistema...");
       setTimeout(() => {
         setToast(null);
         onLoginSuccess(response.user, response.token);
       }, 900);
     } catch (error) {
-      setErrors({ form: error.message || "No se pudo iniciar sesión" });
+      setErrors({ form: parseApiError(error.message) || (lang === "en" ? "Could not sign in" : "No se pudo iniciar sesión") });
     } finally {
       setLoading(false);
     }
@@ -98,15 +105,18 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
 
         <div className="right-panel">
           <div className="login-card">
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+              <LanguageSwitcher />
+            </div>
             <div className="form-header">
-              <p className="form-eyebrow">Bienvenido de vuelta</p>
-              <h2 className="form-title">Inicia sesión</h2>
-              <p className="form-subtitle">Accede a tu panel financiero personal</p>
+              <p className="form-eyebrow">{t("login.title")}</p>
+              <h2 className="form-title">{t("login.submit")}</h2>
+              <p className="form-subtitle">{t("login.subtitle")}</p>
             </div>
 
             <form onSubmit={handleSubmit} noValidate>
               <div className="form-group">
-                <label className="form-label" htmlFor="email">Correo electrónico</label>
+                <label className="form-label" htmlFor="email">{t("login.email")}</label>
                 <div className="input-wrap">
                   <span className="input-icon">✉</span>
                   <input
@@ -123,7 +133,7 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="password">Contraseña</label>
+                <label className="form-label" htmlFor="password">{t("login.password")}</label>
                 <div className="input-wrap">
                   <span className="input-icon">🔒</span>
                   <input
@@ -154,21 +164,21 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
                     checked={remember}
                     onChange={(e) => setRemember(e.target.checked)}
                   />
-                  Recuérdame
+                  {t("login.remember")}
                 </label>
-                <a href="#" className="forgot-link">¿Olvidaste tu contraseña?</a>
+                <a href="#" className="forgot-link">{t("login.forgot")}</a>
               </div>
 
               {errors.form && <div className="error-msg">⚠ {errors.form}</div>}
 
               <button type="submit" className="btn-login" disabled={loading}>
                 {loading ? <div className="spinner" /> : null}
-                {loading ? "Verificando..." : "Entrar al sistema →"}
+                {loading ? t("login.submitting") : `${t("login.submit")} →`}
               </button>
 
               <p className="signup-line">
-                ¿No tienes cuenta?{" "}
-                <a onClick={onRegister} className="signup-link">Regístrate gratis</a>
+                {t("login.noAccount")}{" "}
+                <a onClick={onRegister} className="signup-link">{t("login.register")}</a>
               </p>
             </form>
           </div>

@@ -3,7 +3,8 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Cell, LineChart, Line
 } from "recharts";
-import SidebarCards from "../components/SidebarCards";
+import AppShell from "../components/AppShell";
+import { useI18n } from "../i18n/index.jsx";
 import {
   EXPENSES_CHANGED_EVENT,
   loadStoredExpenses,
@@ -46,15 +47,6 @@ const GASTOS_INIT = [
   { id:18, desc:"Agua Sedapal",              cat:"servicios",    monto:42.00,  fecha:"2025-05-05", nota:"",                      recurrente:true  },
   { id:19, desc:"Zara",                       cat:"ropa",         monto:89.00,  fecha:"2025-05-03", nota:"",                      recurrente:false },
   { id:20, desc:"Gas",                        cat:"otros",        monto:28.00,  fecha:"2025-05-02", nota:"Balón de gas",          recurrente:false },
-];
-
-const NAV_ITEMS = [
-  { id:"dashboard",  label:"Dashboard",  icon:"◉" },
-  { id:"gastos",     label:"Gastos",     icon:"💳" },
-  { id:"metas",      label:"Metas",      icon:"🎯" },
-  { id:"calendario", label:"Calendario", icon:"📅" },
-  { id:"chatbot",    label:"Chatbot IA", icon:"🤖" },
-  { id:"perfil",     label:"Mi Perfil",  icon:"👤" },
 ];
 
 /* -----------------------------------------
@@ -299,7 +291,13 @@ const CustomTip = ({ active, payload, label }) => {
   );
 };
 
+const todayLocalISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
 export default function GastosPage({ onLogout, onNavigate, isGuest = false, user = null }) {
+  const { t } = useI18n();
   const [gastos, setGastos]         = useState(() => getInitialExpenses(isGuest ? GASTOS_INIT : []));
   const [search, setSearch]         = useState("");
   const [catFilter, setCatFilter]   = useState("todas");
@@ -308,17 +306,15 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
   const [page, setPage]             = useState(1);
   const [showModal, setShowModal]   = useState(false);
   const [toast, setToast]           = useState(null);
-  const [activeNav, setActiveNav]   = useState("gastos");
   const PER_PAGE = 8;
   const currentPeriod = getCurrentPeriod();
 
   const handleNavClick = (id) => {
-    setActiveNav(id);
     if (onNavigate) onNavigate(id);
   };
 
   // Form state
-  const [form, setForm] = useState({ desc: "", monto: "", cat: "alimentacion", fecha: new Date().toISOString().slice(0, 10), nota: "", recurrente: false });
+  const [form, setForm] = useState({ desc: "", monto: "", cat: "alimentacion", fecha: todayLocalISO(), nota: "", recurrente: false });
   const [editId, setEditId] = useState(null);
 
   const showToast = (msg, err = false) => {
@@ -390,7 +386,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
   })).sort((a, b) => b.gastado - a.gastado), [gastos]);
 
   const openNew = () => {
-    setForm({ desc: "", monto: "", cat: "alimentacion", fecha: new Date().toISOString().slice(0, 10), nota: "", recurrente: false });
+    setForm({ desc: "", monto: "", cat: "alimentacion", fecha: todayLocalISO(), nota: "", recurrente: false });
     setEditId(null);
     setShowModal(true);
   };
@@ -488,50 +484,20 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
         </div>
       )}
 
-      <div className="app gastos-app">
-        {/* SIDEBAR */}
-        <aside className="sidebar">
-          <div className="sb-brand">
-            <div className="sb-ico">💎</div>
-            <span className="sb-txt">Savia</span>
-          </div>
-          <nav className="sb-nav">
-            {NAV_ITEMS.map(item => (
-              <button key={item.id} className={`nav-item${activeNav === item.id ? " active" : ""}`}
-                onClick={() => handleNavClick(item.id)}>
-                <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-            <SidebarCards onManage={() => handleNavClick("dashboard")} />
-          </nav>
-          <div className="sb-footer">
-            <div className="user-chip">
-              <div className="user-av">{user?.avatar || `${(user?.firstName?.[0] || user?.fullName?.[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2)}</div>
-              <div style={{ flex: 1 }}>
-                <div className="user-nm">{user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva")}</div>
-                <div className="user-pl">{isGuest ? "⭐ Premium" : (user?.plan === "premium" ? "⭐ Premium" : "Plan gratuito")}</div>
-              </div>
-              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
-            </div>
-          </div>
-        </aside>
-
-        {/* MAIN */}
-        <div className="main">
-          <header className="header">
-            <div className="hd-left">
-              <span className="hd-eye">Gestión financiera · {currentPeriod.label}</span>
-              <span className="hd-title">Mis Gastos</span>
-            </div>
-            <div className="hd-right">
-              <button className="btn-icon" title="Exportar">📥</button>
-              <button className="btn-primary" onClick={openNew}>
-                <span style={{ fontSize: 16 }}>+</span> Nuevo gasto
-              </button>
-            </div>
-          </header>
-
+      <AppShell
+        active="gastos"
+        onNavigate={handleNavClick}
+        onLogout={onLogout}
+        user={user}
+        isGuest={isGuest}
+        eyebrow={`${t("expenses.subtitle")} · ${currentPeriod.label}`}
+        title={t("expenses.title")}
+        headerRight={(
+          <button className="btn-primary" onClick={openNew}>
+            <span style={{ fontSize: 16 }}>+</span> {t("expenses.new").replace("+ ", "")}
+          </button>
+        )}
+      >
           <div className="content">
 
             {/* SUMMARY STRIP */}
@@ -772,8 +738,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
               </div>
             </div>
           </div>
-        </div>
-      </div>
+      </AppShell>
     </>
   );
 }

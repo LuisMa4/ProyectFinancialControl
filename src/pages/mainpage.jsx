@@ -3,11 +3,12 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import SidebarCards from "../components/SidebarCards";
+import AppShell from "../components/AppShell";
 import { loadStoredCards, readStoredCards, writeStoredCards } from "../utils/cardsStorage";
 import { loadStoredExpenses, EXPENSE_CATEGORIES } from "../utils/expensesStorage";
 import { loadStoredGoals } from "../utils/goalsStorage";
 import { apiRequest } from "../utils/apiClient";
+import { useI18n } from "../i18n/index.jsx";
 import "./mainpage.css";
 
 const GASTOS_MES = [
@@ -87,15 +88,6 @@ const PAGOS_PROXIMOS = [
   { id: 3, desc: "Seguro auto", monto: 220, fecha: "10 Jun", dias: 16, icon: "🚘" },
 ];
 
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: "◉" },
-  { id: "gastos", label: "Gastos", icon: "💳" },
-  { id: "metas", label: "Metas", icon: "🎯" },
-  { id: "calendario", label: "Calendario", icon: "📅" },
-  { id: "chatbot", label: "Chatbot IA", icon: "🤖" },
-  { id: "perfil", label: "Mi Perfil", icon: "👤" },
-];
-
 const TIPO_CAMBIO = { USD: 3.74, EUR: 4.05, BTC: 0.000011 };
 
 const CARD_FORM_DEF = {
@@ -103,22 +95,6 @@ const CARD_FORM_DEF = {
   numero: "",
   vencimiento: "",
   alias: "",
-};
-
-const getTodayLabel = () => {
-  const today = new Date();
-  return today.toLocaleDateString("es-PE", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-};
-
-const getGreeting = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Buenos días";
-  if (hour < 19) return "Buenas tardes";
-  return "Buenas noches";
 };
 
 const getMonthlyVariation = (months, key, increaseIsGood = true) => {
@@ -239,7 +215,7 @@ const toISODate = (date) => {
 const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
 const monthlyIncomeFromEvents = (events) =>
-  events.filter((event) => event.tipo === "ingreso").reduce((total, event) => total + event.monto, 0);
+  events.filter((event) => event.tipo === "ingreso").reduce((total, event) => total + Math.abs(event.monto), 0);
 
 const buildRealPeriodData = (expenses, events) => {
   const today = new Date();
@@ -253,7 +229,7 @@ const buildRealPeriodData = (expenses, events) => {
     const gastos = expenses.filter((item) => item.fecha === iso).reduce((total, item) => total + item.monto, 0);
     const ingresos = events
       .filter((event) => event.tipo === "ingreso" && event.dia === date.getDate())
-      .reduce((total, event) => total + event.monto, 0);
+      .reduce((total, event) => total + Math.abs(event.monto), 0);
     daily.push({ label: capitalize(date.toLocaleDateString("es-PE", { weekday: "short" })), gastos, ingresos });
   }
 
@@ -274,7 +250,7 @@ const buildRealPeriodData = (expenses, events) => {
           ? event.dia >= start.getDate() && event.dia <= end.getDate()
           : event.dia >= start.getDate() || event.dia <= end.getDate()
       ))
-      .reduce((total, event) => total + event.monto, 0);
+      .reduce((total, event) => total + Math.abs(event.monto), 0);
     weekly.push({ label: `Sem ${4 - week}`, gastos, ingresos });
   }
 
@@ -339,7 +315,7 @@ const buildRealUpcomingPayments = (events) => {
       return {
         id: event.id,
         desc: event.desc,
-        monto: event.monto,
+        monto: Math.abs(event.monto),
         fecha: capitalize(nextDate.toLocaleDateString("es-PE", { day: "2-digit", month: "short" })),
         dias,
         icon: event.icono || "💳",
@@ -366,10 +342,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Dashboard({ onLogout, onNavigate, isGuest = false, user = null }) {
-  const [activeNav, setActiveNav] = useState("dashboard");
+  const { t, locale } = useI18n();
   const [periodo, setPeriodo] = useState("Mes");
   const [showAlert, setShowAlert] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cards, setCards] = useState(readStoredCards);
   const [cardModalStep, setCardModalStep] = useState(null);
   const [cardForm, setCardForm] = useState(CARD_FORM_DEF);
@@ -389,6 +364,8 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
   }, [isGuest]);
 
   const activePeriod = PERIOD_DATA[periodo];
+  const periodLabel = t(periodo === "Días" ? "period.last7" : periodo === "Mes" ? "period.last4w" : "period.last6m");
+  const periodCompareLabel = t(periodo === "Días" ? "period.dailyCompare" : periodo === "Mes" ? "period.weeklyCompare" : "period.monthlyCompare");
   const realPeriods = buildRealPeriodData(expenses, events);
   const realPeriodData = periodo === "Días" ? realPeriods.daily : periodo === "Mes" ? realPeriods.weekly : realPeriods.monthly;
   const periodData = isGuest ? activePeriod.data : realPeriodData;
@@ -420,21 +397,19 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
   const ingresosTrend = getMonthlyVariation(periodData, "ingresos", true);
   const gastosTrend = getMonthlyVariation(periodData, "gastos", false);
   const metasTrend = getGoalsTrend(metas);
-  const todayLabel = getTodayLabel();
-  const greeting = getGreeting();
-  const displayName = user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva");
-  const firstName = user?.firstName || displayName.split(" ")[0] || "Cuenta";
-  const avatar = user?.avatar || `${(user?.firstName?.[0] || displayName[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2);
-  const planLabel = isGuest ? "⭐ Premium" : "Plan gratuito";
+  const todayLabel = new Date().toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
+  const hour = new Date().getHours();
+  const greeting = t(hour < 12 ? "greeting.morning" : hour < 19 ? "greeting.afternoon" : "greeting.evening");
+  const displayName = user?.fullName || user?.email || (isGuest ? "Juan Pérez" : t("common.newAccount"));
+  const firstName = user?.firstName || displayName.split(" ")[0] || "";
   const currentCardBrand = getCardBrand(cardForm.numero);
+  const currentMonthName = new Date().toLocaleDateString(locale, { month: "long" });
 
   useEffect(() => {
     void loadStoredCards().then(setCards);
   }, []);
 
   const handleNavClick = (id) => {
-    setActiveNav(id);
-    setSidebarOpen(false);
     if (onNavigate) onNavigate(id);
   };
 
@@ -516,7 +491,30 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
   };
 
   return (
-    <div className="app dashboard-app">
+    <AppShell
+      active="dashboard"
+      onNavigate={handleNavClick}
+      onLogout={onLogout}
+      user={user}
+      isGuest={isGuest}
+      fullBleed
+      onManageCards={openCardsModal}
+      headerLeft={(
+        <div className="header-left">
+          <span className="header-greeting">{todayLabel} · Lima, PE</span>
+          <span className="header-title">{greeting}{firstName ? `, ${firstName}` : ""}</span>
+        </div>
+      )}
+      headerRight={(
+        <div className="periodo-sel">
+          {["Días", "Mes", "Año"].map((p) => (
+            <button key={p} className={`per-btn${periodo === p ? " active" : ""}`} onClick={() => setPeriodo(p)}>
+              {t(p === "Días" ? "dash.days" : p === "Mes" ? "dash.month" : "dash.year")}
+            </button>
+          ))}
+        </div>
+      )}
+    >
       {cardModalStep && (
         <div className="card-modal-overlay" onClick={e => e.target === e.currentTarget && closeCardsModal()}>
           <div className="card-modal">
@@ -626,69 +624,14 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
         </div>
       )}
 
-      <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
-        <div className="sidebar-brand">
-          <div className="brand-ico">💎</div>
-          <span className="brand-txt">Savia</span>
-        </div>
-
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              className={`nav-item${activeNav === item.id ? " active" : ""}`}
-              onClick={() => handleNavClick(item.id)}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-
-          <SidebarCards onManage={openCardsModal} />
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="user-chip">
-            <div className="user-avatar">{avatar}</div>
-            <div className="user-info">
-              <div className="user-name">{displayName}</div>
-              <div className="user-plan">{planLabel}</div>
-            </div>
-            <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>
-          </div>
-        </div>
-      </aside>
-
-      <div className="main">
-        <header className="header">
-          <div className="header-left">
-            <span className="header-greeting">{todayLabel} - Lima, PE</span>
-            <span className="header-title">{greeting}, {firstName}</span>
-          </div>
-          <div className="header-right">
-            <div className="periodo-sel">
-              {["Días", "Mes", "Año"].map((p) => (
-                <button key={p} className={`per-btn${periodo === p ? " active" : ""}`} onClick={() => setPeriodo(p)}>
-                  {p}
-                </button>
-              ))}
-            </div>
-            <button className="badge-btn" title="Notificaciones">
-              🔔
-              <div className="notif-dot" />
-            </button>
-            <button className="badge-btn" title="Ajustes">⚙️</button>
-          </div>
-        </header>
-
         <div className="content">
           {showAlert && presupuesto > 0 && pctUsado >= 80 && (
             <div className="alert-banner">
               <span className="alert-icon">⚠️</span>
               <div className="alert-body">
-                <div className="alert-title">Cerca de tu límite mensual</div>
+                <div className="alert-title">{t("dash.alertTitle")}</div>
                 <div className="alert-msg">
-                  Has usado el {pctUsado}% de tu presupuesto. Te quedan S/ {Math.max(presupuesto - totalGastos, 0).toLocaleString()} disponibles.
+                  {t("dash.alertMsg", { pct: pctUsado, left: Math.max(presupuesto - totalGastos, 0).toLocaleString() })}
                 </div>
               </div>
               <button className="alert-close" onClick={() => setShowAlert(false)}>✕</button>
@@ -697,7 +640,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
 
           <div className="ticker">
             <span style={{ fontSize: 11, fontWeight: 600, color: "var(--agua-deep)", letterSpacing: ".5px", textTransform: "uppercase" }}>
-              Tipo de Cambio
+              {t("dash.exchangeRate")}
             </span>
             {Object.entries(TIPO_CAMBIO).map(([k, v], i) => (
               <span className="ticker-item" key={k}>
@@ -717,13 +660,13 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
               </div>
               <div>
                 <div className="kpi-val">S/ {saldo.toLocaleString()}</div>
-                <div className="kpi-label">Saldo disponible</div>
+                <div className="kpi-label">{t("dash.balance")}</div>
               </div>
               <div className="kpi-progress">
                 <div className="kpi-prog-track">
                   <div className="kpi-prog-fill" style={{ width: `${pctLibre}%` }} />
                 </div>
-                <div className="kpi-prog-label">{pctLibre}% del presupuesto libre</div>
+                <div className="kpi-prog-label">{pctLibre}{t("dash.budgetFree")}</div>
               </div>
             </div>
 
@@ -733,7 +676,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
                 <div className={`kpi-trend ${ingresosTrend.className}`}>{ingresosTrend.label}</div>
               </div>
               <div className="kpi-val" style={{ color: "#4CAF7D" }}>S/ {ingresosMes.toLocaleString()}</div>
-              <div className="kpi-label">Ingresos del periodo</div>
+              <div className="kpi-label">{t("dash.income")}</div>
             </div>
 
             <div className="kpi-card">
@@ -742,7 +685,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
                 <div className={`kpi-trend ${gastosTrend.className}`}>{gastosTrend.label}</div>
               </div>
               <div className="kpi-val" style={{ color: "var(--red)" }}>S/ {totalGastos.toLocaleString()}</div>
-              <div className="kpi-label">Gastos del periodo</div>
+              <div className="kpi-label">{t("dash.expenses")}</div>
             </div>
 
             <div className="kpi-card">
@@ -751,7 +694,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
                 <div className={`kpi-trend ${metasTrend.className}`}>{metasTrend.label}</div>
               </div>
               <div className="kpi-val">S/ {totalAhorrado.toLocaleString()}</div>
-              <div className="kpi-label">Total ahorrado</div>
+              <div className="kpi-label">{t("dash.saved")}</div>
             </div>
           </div>
 
@@ -759,10 +702,10 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
             <div className="card" style={{ animationDelay: "0.25s" }}>
               <div className="card-header">
                 <div>
-                  <div className="card-title">Ingresos vs Gastos</div>
-                  <div className="card-sub">{activePeriod.chartSub}</div>
+                  <div className="card-title">{t("dash.incomeVsExpenses")}</div>
+                  <div className="card-sub">{periodCompareLabel}</div>
                 </div>
-                <div className="card-badge">{activePeriod.label}</div>
+                <div className="card-badge">{periodLabel}</div>
               </div>
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={periodData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
@@ -797,8 +740,8 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
             <div className="card" style={{ animationDelay: "0.3s" }}>
               <div className="card-header">
                 <div>
-                  <div className="card-title">Por Categoría</div>
-                  <div className="card-sub">Distribución de gastos</div>
+                  <div className="card-title">{t("dash.byCategory")}</div>
+                  <div className="card-sub">{t("dash.categorySub")}</div>
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={140}>
@@ -827,14 +770,14 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
             <div className="card" style={{ animationDelay: "0.35s" }}>
               <div className="card-header">
                 <div>
-                  <div className="card-title">Últimos movimientos</div>
-                  <div className="card-sub">Actividad reciente</div>
+                  <div className="card-title">{t("dash.recentMoves")}</div>
+                  <div className="card-sub">{t("dash.recentSub")}</div>
                 </div>
-                <div className="card-badge">{activePeriod.label}</div>
+                <div className="card-badge">{periodLabel}</div>
               </div>
               <div className="tx-list">
                 {transacciones.length === 0 && (
-                  <div className="card-empty">Aún no tienes movimientos. Registra tu primer gasto para verlo aquí.</div>
+                  <div className="card-empty">{t("dash.emptyMoves")}</div>
                 )}
                 {transacciones.map((tx) => (
                   <div className="tx-item" key={tx.id}>
@@ -849,19 +792,19 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
                   </div>
                 ))}
               </div>
-              <button className="view-all" onClick={() => handleNavClick("gastos")}>Ver todos los movimientos →</button>
+              <button className="view-all" onClick={() => handleNavClick("gastos")}>{t("dash.viewAll")}</button>
             </div>
 
             <div className="card" style={{ animationDelay: "0.4s" }}>
               <div className="card-header">
                 <div>
-                  <div className="card-title">Metas de Ahorro</div>
-                  <div className="card-sub">Progreso actual</div>
+                  <div className="card-title">{t("dash.savingGoals")}</div>
+                  <div className="card-sub">{t("dash.goalsSub")}</div>
                 </div>
               </div>
               <div className="meta-list">
                 {metas.length === 0 && (
-                  <div className="card-empty">Todavía no tienes metas de ahorro. Crea la primera y sigue su progreso aquí.</div>
+                  <div className="card-empty">{t("dash.emptyGoals")}</div>
                 )}
                 {metas.map((m) => {
                   const pct = Math.round((m.actual / m.meta) * 100);
@@ -885,19 +828,19 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
                   );
                 })}
               </div>
-              <button className="add-meta-btn" onClick={() => handleNavClick("metas")}>+ Nueva meta de ahorro</button>
+              <button className="add-meta-btn" onClick={() => handleNavClick("metas")}>{t("dash.newGoal")}</button>
             </div>
 
             <div className="card" style={{ animationDelay: "0.45s" }}>
               <div className="card-header">
                 <div>
-                  <div className="card-title">Próximos Pagos</div>
-                  <div className="card-sub">Vencimientos de {new Date().toLocaleDateString("es-PE", { month: "long" })}</div>
+                  <div className="card-title">{t("dash.upcoming")}</div>
+                  <div className="card-sub">{t("dash.upcomingSub", { month: currentMonthName })}</div>
                 </div>
               </div>
               <div className="pagos-list">
                 {pagosProximos.length === 0 && (
-                  <div className="card-empty">Sin pagos programados. Agrega eventos de pago en el Calendario.</div>
+                  <div className="card-empty">{t("dash.emptyPayments")}</div>
                 )}
                 {pagosProximos.map((p) => (
                   <div className="pago-item" key={p.id}>
@@ -918,7 +861,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
 
               {pagosProximos.length > 0 && (
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>Total comprometido en {new Date().toLocaleDateString("es-PE", { month: "long" })}</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>{t("dash.committed", { month: currentMonthName })}</div>
                 <ResponsiveContainer width="100%" height={80}>
                   <BarChart data={pagosProximos.map((p) => ({ name: p.desc, monto: p.monto }))} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
@@ -934,7 +877,6 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </AppShell>
   );
 }

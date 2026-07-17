@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import SidebarCards from "../components/SidebarCards";
+import AppShell from "../components/AppShell";
+import { useI18n } from "../i18n/index.jsx";
 import { apiRequest } from "../utils/apiClient";
 import { loadStoredExpenses } from "../utils/expensesStorage";
 import { loadStoredGoals } from "../utils/goalsStorage";
@@ -51,15 +52,6 @@ const ESTADISTICAS = [
   { label:"Metas activas",      val:"4",  icon:"🎯", color:"#5AADA5" },
   { label:"Meses de uso",       val:"5",  icon:"📅", color:"#C9A96E" },
   { label:"Ahorro acumulado",   val:"S/ 8,170", icon:"💰", color:"#4CAF7D" },
-];
-
-const NAV_ITEMS = [
-  { id:"dashboard",  label:"Dashboard",  icon:"◉" },
-  { id:"gastos",     label:"Gastos",     icon:"💳" },
-  { id:"metas",      label:"Metas",      icon:"🎯" },
-  { id:"calendario", label:"Calendario", icon:"📅" },
-  { id:"chatbot",    label:"Chatbot IA", icon:"🤖" },
-  { id:"perfil",     label:"Mi Perfil",  icon:"👤" },
 ];
 
 const AVATAR_COLORS = [
@@ -380,6 +372,7 @@ const Switch = ({ checked, onChange }) => (
    COMPONENT
 ───────────────────────────────────────── */
 export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user = null, registeredAt, onUserUpdate = null }) {
+  const { t } = useI18n();
   const initialUser = user
     ? {
         nombre: user.firstName || "",
@@ -398,7 +391,6 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
     : isGuest
       ? USUARIO_INIT
       : { ...USUARIO_EMPTY, fechaRegistro: registeredAt || "" };
-  const [activeNav, setActiveNav] = useState("perfil");
   const [tab, setTab]             = useState("personal"); // personal | seguridad | notificaciones | plan
   const [usuario, setUsuario]     = useState(initialUser);
   const [form, setForm]           = useState({ ...initialUser });
@@ -407,7 +399,6 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
   const [toast, setToast]         = useState(null);
 
   const handleNavClick = (id) => {
-    setActiveNav(id);
     if (onNavigate) onNavigate(id);
   };
 
@@ -659,50 +650,20 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
         </div>
       )}
 
-      {/* ── APP ── */}
-      <div className="app profile-app">
-        <aside className="sidebar">
-          <div className="sb-brand">
-            <div className="sb-ico">💎</div>
-            <span className="sb-txt">Savia</span>
-          </div>
-          <nav className="sb-nav">
-            {NAV_ITEMS.map(item => (
-              <button key={item.id} className={`nav-item${activeNav===item.id?" active":""}`}
-                onClick={() => handleNavClick(item.id)}>
-                <span style={{fontSize:16,width:20,textAlign:"center"}}>{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-            <SidebarCards onManage={() => handleNavClick("dashboard")} />
-          </nav>
-          <div className="sb-footer">
-            <div className="user-chip">
-              <div className="user-av" style={{background:usuario.avatarColor}}>{usuario.avatar}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div className="user-nm">{usuario.nombre} {usuario.apellido}</div>
-                <div className="user-pl">{isGuest ? "⭐ Premium" : "Plan gratuito"}</div>
-              </div>
-              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
-            </div>
-          </div>
-        </aside>
-
-        <div className="main">
-          <header className="header">
-            <div>
-              <div className="hd-eye">Configuración de cuenta</div>
-              <div className="hd-title">Mi Perfil</div>
-            </div>
-            <div className="hd-right">
-              {dirty && (
-                <button className="btn-primary" onClick={guardarPerfil} disabled={saving}>
-                  {saving ? "Guardando…" : "💾 Guardar cambios"}
-                </button>
-              )}
-            </div>
-          </header>
-
+      <AppShell
+        active="perfil"
+        onNavigate={handleNavClick}
+        onLogout={onLogout}
+        user={user}
+        isGuest={isGuest}
+        eyebrow={t("profile.subtitle")}
+        title={t("profile.title")}
+        headerRight={dirty ? (
+          <button className="btn-primary" onClick={guardarPerfil} disabled={saving}>
+            {saving ? t("common.saving") : t("profile.saveChanges")}
+          </button>
+        ) : null}
+      >
           <div className="content">
 
             {/* ── HERO ── */}
@@ -1013,8 +974,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
               </div>
             </div>
           </div>
-        </div>
-      </div>
+      </AppShell>
     </>
   );
 }

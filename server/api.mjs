@@ -105,6 +105,11 @@ const readBody = async (req) => {
 
 const onlyDigits = (value) => String(value || "").replace(/\D/g, "");
 
+const todayLocalISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
 const maskNumber = (last4) => `**** **** **** ${String(last4 || "----")}`;
 
 const normalizeCardRow = (row) => ({
@@ -151,7 +156,7 @@ const toExpenseRecord = (expense) => ({
   type: "expense",
   title: expense.desc || expense.title || "Gasto",
   amount: Number(expense.monto ?? expense.amount ?? 0),
-  transaction_date: expense.fecha || expense.transaction_date || new Date().toISOString().slice(0, 10),
+  transaction_date: expense.fecha || expense.transaction_date || todayLocalISO(),
   note: expense.nota || expense.note || "",
   is_recurring: Number(Boolean(expense.recurrente ?? expense.is_recurring)),
   icon: expense.icon || "",
@@ -274,7 +279,8 @@ const normalizeEventRow = (row) => ({
   id: row.id,
   tipo: row.event_type,
   desc: row.title,
-  monto: Number(row.amount),
+  // signo consistente: ingresos positivos, pagos y aportes a metas negativos
+  monto: row.event_type === "ingreso" ? Math.abs(Number(row.amount)) : -Math.abs(Number(row.amount)),
   dia: Number(row.day_of_month),
   icono: row.icon,
   color: row.color,

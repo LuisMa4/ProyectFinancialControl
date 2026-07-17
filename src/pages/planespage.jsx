@@ -1,5 +1,5 @@
 import { useState } from "react";
-import SidebarCards from "../components/SidebarCards";
+import AppShell from "../components/AppShell";
 
 const S = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
@@ -232,15 +232,6 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--sl
 }
 `;
 
-const NAV_ITEMS = [
-  { id:"dashboard",  label:"Dashboard",  icon:"◉" },
-  { id:"gastos",     label:"Gastos",     icon:"💳" },
-  { id:"metas",      label:"Metas",      icon:"🎯" },
-  { id:"calendario", label:"Calendario", icon:"📅" },
-  { id:"chatbot",    label:"Chatbot IA", icon:"🤖" },
-  { id:"perfil",     label:"Mi Perfil",  icon:"👤" },
-];
-
 const FEATURES = [
   // [label, sub, free, premium, tag?]
   ["Registro de gastos e ingresos",    "Ilimitado en ambos planes",         true,  true,  null],
@@ -305,8 +296,6 @@ const FAQS = [
 
 export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user = null }) {
   const [billing, setBilling]       = useState("mensual"); // mensual | anual
-  const [activeNav, setActiveNav]   = useState("perfil");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
   const [openFaq, setOpenFaq]       = useState(null);
   const [toast, setToast]           = useState(null);
@@ -318,7 +307,6 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
   const precioAnual   = 8; // por mes
   const precio = billing === "anual" ? precioAnual : precioMensual;
   const displayName = user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva");
-  const avatar = user?.avatar || `${(user?.firstName?.[0] || displayName[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2);
 
   const handleSelect = (plan) => {
     if (plan === "free") {
@@ -331,8 +319,6 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
   };
 
   const handleNavClick = (id) => {
-    setActiveNav(id);
-    setSidebarOpen(false);
     if (onNavigate) onNavigate(id);
   };
 
@@ -340,49 +326,15 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
     <>
       <style>{S}</style>
       {toast && <div className="toast">{toast}</div>}
-      <div className={`sb-overlay${sidebarOpen ? " show" : ""}`} onClick={() => setSidebarOpen(false)} />
-
-      <div className="app planes-app">
-        {/* SIDEBAR */}
-        <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
-          <div className="sb-brand">
-            <div className="sb-ico">💎</div>
-            <span className="sb-txt">FinVerde</span>
-          </div>
-          <nav className="sb-nav">
-            {NAV_ITEMS.map(item => (
-              <button key={item.id} className={`nav-item${activeNav === item.id ? " active" : ""}`}
-                onClick={() => handleNavClick(item.id)}>
-                <span style={{ fontSize:15, width:19, textAlign:"center", flexShrink:0 }}>{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-            <SidebarCards onManage={() => handleNavClick("dashboard")} />
-          </nav>
-          <div className="sb-footer">
-            <div className="user-chip">
-              <div className="user-av">{avatar}</div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div className="user-nm">{displayName}</div>
-                <div className="user-pl">{currentPlan === "premium" ? "⭐ Premium" : "Plan Gratuito"}</div>
-              </div>
-              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
-            </div>
-          </div>
-        </aside>
-
-        <div className="main">
-          {/* HEADER */}
-          <header className="header">
-            <div className="hd-left">
-              <button className="hamburger" onClick={() => setSidebarOpen(v => !v)}>☰</button>
-              <div>
-                <div className="hd-eye">Cuenta · {displayName}</div>
-                <div className="hd-title">Planes y Suscripción</div>
-              </div>
-            </div>
-          </header>
-
+      <AppShell
+        active="perfil"
+        onNavigate={handleNavClick}
+        onLogout={onLogout}
+        user={user}
+        isGuest={isGuest}
+        eyebrow={`Cuenta · ${displayName}`}
+        title="Planes y Suscripción"
+      >
           <div className="content">
 
             {/* ── HERO ── */}
@@ -609,8 +561,7 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
             </div>
 
           </div>
-        </div>
-      </div>
+      </AppShell>
     </>
   );
 }

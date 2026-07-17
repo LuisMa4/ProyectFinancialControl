@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { registerAccount, writeAuthToken } from "../utils/authStorage";
+import LanguageSwitcher from "../components/LanguageSwitcher";
+import { useI18n } from "../i18n/index.jsx";
 import "./register.css";
 
 const STEPS = ["Cuenta", "Perfil", "Plan"];
@@ -22,6 +24,7 @@ function getStrength(pw) {
 }
 
 export default function RegisterPage({ onLogin, onRegisterSuccess }) {
+  const { t } = useI18n();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -133,10 +136,13 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
         {/* RIGHT */}
         <div className="right-panel">
           <div className="register-card">
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+            <LanguageSwitcher />
+          </div>
           <div className="form-header">
             <p className="form-eyebrow">Paso {step + 1} de 3</p>
             <h2 className="form-title">
-              {step === 0 && "Crea tu cuenta"}
+              {step === 0 && t("register.title")}
               {step === 1 && "Tu perfil"}
               {step === 2 && "Elige tu plan"}
             </h2>
@@ -167,7 +173,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
           {step === 0 && (
             <>
               <div className="form-group">
-                <label className="form-label">Correo electrónico</label>
+                <label className="form-label">{t("register.email")}</label>
                 <div className="input-wrap">
                   <span className="input-icon">✉</span>
                   <input
@@ -182,7 +188,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Contraseña</label>
+                <label className="form-label">{t("register.password")}</label>
                 <div className="input-wrap">
                   <span className="input-icon">🔒</span>
                   <input
@@ -208,7 +214,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Confirmar contraseña</label>
+                <label className="form-label">{t("register.confirmPassword")}</label>
                 <div className="input-wrap">
                   <span className="input-icon">🔒</span>
                   <input
@@ -232,7 +238,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
             <>
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">Nombre</label>
+                  <label className="form-label">{t("register.firstName")}</label>
                   <div className="input-wrap">
                     <span className="input-icon">👤</span>
                     <input
@@ -247,7 +253,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Apellido</label>
+                  <label className="form-label">{t("register.lastName")}</label>
                   <div className="input-wrap">
                     <span className="input-icon">👤</span>
                     <input
@@ -369,7 +375,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
             )}
             <button className="btn-next" onClick={handleNext} disabled={loading}>
               {loading ? <div className="spinner" /> : null}
-              {loading ? "Creando cuenta…" : step < 2 ? "Continuar →" : "Crear cuenta →"}
+              {loading ? t("register.submitting") : step < 2 ? `${t("register.continue")} →` : `${t("register.submit")} →`}
             </button>
           </div>
 

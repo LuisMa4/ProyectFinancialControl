@@ -3,22 +3,14 @@
 /* ─────────────────────────────────────────
    DATA & CONFIG
 ───────────────────────────────────────── */
-import SidebarCards from "../components/SidebarCards";
+import AppShell from "../components/AppShell";
+import { useI18n } from "../i18n/index.jsx";
 import {
   EXPENSE_CATEGORIES,
   addStoredExpense,
 } from "../utils/expensesStorage";
 import { loadStoredGoals } from "../utils/goalsStorage";
 import { apiRequest } from "../utils/apiClient";
-
-const NAV_ITEMS = [
-  { id:"dashboard",  label:"Dashboard",  icon:"◉" },
-  { id:"gastos",     label:"Gastos",     icon:"💳" },
-  { id:"metas",      label:"Metas",      icon:"🎯" },
-  { id:"calendario", label:"Calendario", icon:"📅" },
-  { id:"chatbot",    label:"Chatbot IA", icon:"🤖" },
-  { id:"perfil",     label:"Mi Perfil",  icon:"👤" },
-];
 
 const SUGERENCIAS_INIT = [
   { id:1, texto:"¿Cómo va mi presupuesto este mes?",   icono:"📊" },
@@ -94,6 +86,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .btn-ghost{padding:8px 10px;background:none;border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:14px;color:var(--slate-m);transition:all .17s;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;display:flex;align-items:center;gap:5px}
 .btn-ghost:hover{background:var(--mint);border-color:var(--agua-l);color:var(--agua-d)}
 .btn-ghost.active-btn{background:var(--agua-p);border-color:var(--agua);color:var(--agua-d)}
+
+/* ── CHAT WRAP (dentro de AppShell) ── */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 64px);min-height:0;overflow:hidden;background:var(--mint)}
 
 /* ── CHAT LAYOUT ── */
 .chat-layout{display:grid;grid-template-columns:minmax(180px,220px) minmax(0,1fr);flex:1;overflow:hidden;min-height:0}
@@ -323,7 +318,10 @@ const normalizeText = (text) => text
   .normalize("NFD")
   .replace(/[\u0300-\u036f]/g, "");
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 const expenseCategoryKeywords = {
   alimentacion: ["comida", "almuerzo", "cena", "desayuno", "restaurante", "super", "mercado", "wong", "plaza vea", "kfc"],
@@ -427,7 +425,7 @@ const getLocalReply = (content, isGuest) => {
   return "Viendo tus datos, el foco de este mes debería ser conservar los S/ 800 libres y no tocar los aportes a metas. Pregúntame por presupuesto, metas o categorías y lo desgloso.";
 };
 
-const getGeminiReply = async ({ content, history, isGuest }) => {
+const getGeminiReply = async ({ content, history, isGuest, lang = "es" }) => {
   const messages = [
     ...history.slice(-8).map((message) => ({ role: message.role, content: message.content })),
     { role: "user", content },
@@ -436,7 +434,7 @@ const getGeminiReply = async ({ content, history, isGuest }) => {
   try {
     const reply = await apiRequest("/chat", {
       method: "POST",
-      body: JSON.stringify({ messages, language: "es" }),
+      body: JSON.stringify({ messages, language: lang }),
     });
 
     if (reply?.source === "gemini" && reply.content) {
@@ -461,11 +459,10 @@ const getGeminiReply = async ({ content, history, isGuest }) => {
    COMPONENT
 ───────────────────────────────────────── */
 export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, user = null }) {
+  const { t, lang } = useI18n();
   const [messages, setMessages]     = useState([]);
   const [input, setInput]           = useState("");
   const [loading, setLoading]       = useState(false);
-  const [activeNav, setActiveNav]   = useState("chatbot");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
   const [pendingExpense, setPendingExpense] = useState(null);
   const messagesEndRef = useRef(null);
@@ -474,7 +471,6 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
   const displayName = user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva");
   const firstName = user?.firstName || displayName.split(" ")[0] || "Cuenta";
   const avatar = user?.avatar || `${(user?.firstName?.[0] || displayName[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2);
-  const planLabel = isGuest ? "⭐ Premium" : (user?.plan === "premium" ? "⭐ Premium" : "Plan gratuito");
   const suggestions = isGuest ? SUGERENCIAS_INIT : SUGERENCIAS_EMPTY;
   const [realGoals, setRealGoals] = useState([]);
 
@@ -486,8 +482,6 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
   }, [isGuest]);
 
   const handleNavClick = (id) => {
-    setActiveNav(id);
-    setSidebarOpen(false);
     if (onNavigate) onNavigate(id);
   };
 
@@ -577,7 +571,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
         return;
       }
 
-      const reply = await getGeminiReply({ content, history: historyForGemini, isGuest });
+      const reply = await getGeminiReply({ content, history: historyForGemini, isGuest, lang });
       const finaMsg = {
         id: nextMessageId.current++,
         role: "assistant",
@@ -603,69 +597,45 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
   };
 
   const now = new Date();
-  const greeting = now.getHours() < 12 ? "Buenos días" : now.getHours() < 19 ? "Buenas tardes" : "Buenas noches";
+  const greeting = t(now.getHours() < 12 ? "greeting.morning" : now.getHours() < 19 ? "greeting.afternoon" : "greeting.evening");
   const currentPeriodLabel = getCurrentPeriodLabel();
 
   return (
     <>
       <style>{S}</style>
-      <div className={`sb-overlay${sidebarOpen?" show":""}`} onClick={() => setSidebarOpen(false)} />
-
-      <div className="app chatbot-app">
-        {/* SIDEBAR */}
-        <aside className={`sidebar${sidebarOpen?" open":""}`}>
-          <div className="sb-brand">
-            <div className="sb-ico">💎</div>
-            <span className="sb-txt">Savia</span>
-          </div>
-          <nav className="sb-nav">
-            {NAV_ITEMS.map(item => (
-              <button key={item.id} className={`nav-item${activeNav===item.id?" active":""}`}
-                onClick={() => handleNavClick(item.id)}>
-                <span style={{fontSize:15,width:19,textAlign:"center",flexShrink:0}}>{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-            <SidebarCards onManage={() => handleNavClick("dashboard")} />
-          </nav>
-          <div className="sb-footer">
-            <div className="user-chip">
-              <div className="user-av">{avatar}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div className="user-nm">{displayName}</div>
-                <div className="user-pl">{planLabel}</div>
-              </div>
-              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
+      <AppShell
+        active="chatbot"
+        onNavigate={handleNavClick}
+        onLogout={onLogout}
+        user={user}
+        isGuest={isGuest}
+        fullBleed
+        headerLeft={(
+          <div className="hd-left">
+            <div style={{width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,var(--agua-d),var(--agua))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>🤖</div>
+            <div className="hd-titles">
+              <div className="hd-eye">{t("chat.subtitle")}</div>
+              <div className="hd-title">{t("chat.title")}</div>
             </div>
           </div>
-        </aside>
-
-        <div className="main">
-          {/* HEADER */}
-          <header className="header">
-            <div className="hd-left">
-              <button className="hamburger" onClick={() => setSidebarOpen(v => !v)}>☰</button>
-              <div style={{width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,var(--agua-d),var(--agua))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>🤖</div>
-              <div className="hd-titles">
-                <div className="hd-eye">Asistente financiero con IA</div>
-                <div className="hd-title">Fina · Savia IA</div>
-              </div>
-            </div>
-            <div className="hd-right">
-              <button className={`btn-ghost${showHistory?" active-btn":""}`}
-                onClick={() => setShowHistory(v => !v)}
-                style={{display:"flex"}}>
-                🕐 <span style={{marginLeft:4,display:"var(--show-hist,inline)"}}>Historial</span>
-              </button>
-              <button className="btn-ghost" onClick={nuevaConversacion}>✦ Nueva</button>
-            </div>
-          </header>
-
+        )}
+        headerRight={(
+          <>
+            <button className={`btn-ghost${showHistory?" active-btn":""}`}
+              onClick={() => setShowHistory(v => !v)}
+              style={{display:"flex"}}>
+              🕐 <span style={{marginLeft:4}}>{t("chat.history")}</span>
+            </button>
+            <button className="btn-ghost" onClick={nuevaConversacion}>✦ {t("common.new")}</button>
+          </>
+        )}
+      >
+        <div className="chat-wrap">
           {/* CONTEXT BAR */}
           <div className="context-bar">
-            <span className="ctx-label">Contexto activo:</span>
+            <span className="ctx-label">{t("chat.activeContext")}</span>
             <span className="ctx-item" title="Contexto financiero del usuario"><span className="ctx-dot"/>{" "}{isGuest ? "Perfil de Juan" : firstName}</span>
-            <span className="ctx-item">🎯 {isGuest ? "4 metas activas" : `${realGoals.length} ${realGoals.length === 1 ? "meta activa" : "metas activas"}`}</span>
+            <span className="ctx-item">🎯 {isGuest ? "4 metas activas" : (realGoals.length === 1 ? t("chat.goalActive") : t("chat.goalsActive", { count: realGoals.length }))}</span>
             <span className="ctx-item">📅 {currentPeriodLabel}</span>
           </div>
 
@@ -674,13 +644,13 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
             {showHistory && (
               <div className="history-panel">
                 <div className="hist-head">
-                  <div className="hist-title">Conversaciones</div>
+                  <div className="hist-title">{t("chat.conversations")}</div>
                   <button className="new-chat-btn" onClick={nuevaConversacion}>
-                    ✦ Nueva conversación
+                    ✦ {t("chat.newChat")}
                   </button>
                 </div>
                 <div className="hist-list">
-                  <div className="hist-sep">Sin conversaciones anteriores</div>
+                  <div className="hist-sep">{t("chat.noConversations")}</div>
                 </div>
               </div>
             )}
@@ -694,9 +664,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
                   <div className="welcome">
                     <div className="welcome-avatar">🤖</div>
                     <h2 className="welcome-title">{greeting}, {firstName} 👋</h2>
-                    <p className="welcome-sub">
-                      Soy <strong>Fina</strong>, tu asistente financiera personal. Tengo acceso a tus datos de Savia y puedo ayudarte a entender tus finanzas, optimizar tus ahorros y tomar mejores decisiones de dinero.
-                    </p>
+                    <p className="welcome-sub">{t("chat.welcome")}</p>
                     <div className="suggestions-grid">
                       {suggestions.map(s => (
                         <button key={s.id} className="sug-chip" onClick={() => sendMessage(s.texto)}>
@@ -762,7 +730,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
                   <textarea
                     ref={inputRef}
                     className="chat-input"
-                    placeholder="Pregunta sobre tus finanzas… (Enter para enviar)"
+                    placeholder={t("chat.placeholder")}
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -776,14 +744,12 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
                     </button>
                   </div>
                 </div>
-                <div className="input-hint">
-                  Fina tiene acceso a tu perfil financiero · Los consejos son orientativos, no asesoría profesional
-                </div>
+                <div className="input-hint">{t("chat.hint")}</div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </AppShell>
     </>
   );
 }

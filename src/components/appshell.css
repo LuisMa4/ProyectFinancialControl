@@ -1,0 +1,312 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+/* ─── Tokens de diseño Savia ─── */
+:root {
+  --agua: #7EC8C0;
+  --agua-l: #A8DBD6;
+  --agua-p: #D4F0ED;
+  --agua-d: #5AADA5;
+  --agua-deep: #4A8F88;
+  --mint: #EDF8F7;
+  --white: #FAFFFE;
+  --slate: #2D4A47;
+  --slate-m: #4A706C;
+  --muted: #8AADA9;
+  --border: #DDE9E7;
+  --gold: #C9A96E;
+  --red: #E07070;
+  --green: #4CAF7D;
+  --sw: 240px;
+  --radius: 14px;
+  --shadow-sm: 0 1px 4px rgba(45, 74, 71, .06);
+  --shadow-md: 0 4px 18px rgba(45, 74, 71, .08);
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-display: 'DM Serif Display', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--mint);
+  color: var(--slate);
+}
+
+#root { min-height: 100vh; }
+
+/* ─── Layout ─── */
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--mint);
+}
+
+/* ─── Sidebar ─── */
+.shell-sidebar {
+  width: var(--sw);
+  background: var(--slate);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 50;
+  transition: transform .28s ease;
+}
+
+.shell-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.shell-brand-ico {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--agua-d), var(--agua));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.shell-brand-txt {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: #fff;
+  letter-spacing: -.3px;
+}
+
+.shell-nav {
+  flex: 1;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.shell-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, .55);
+  cursor: pointer;
+  transition: background .18s, color .18s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body);
+}
+
+.shell-nav-item:hover {
+  background: rgba(255, 255, 255, .07);
+  color: rgba(255, 255, 255, .85);
+}
+
+.shell-nav-item:focus-visible {
+  outline: 2px solid var(--agua);
+  outline-offset: -2px;
+}
+
+.shell-nav-item.active {
+  background: linear-gradient(135deg, rgba(90, 173, 165, .35), rgba(126, 200, 192, .2));
+  color: #fff;
+  font-weight: 500;
+  box-shadow: inset 0 0 0 1px rgba(126, 200, 192, .22);
+}
+
+.shell-nav-ico {
+  font-size: 15px;
+  width: 19px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.shell-footer {
+  padding: 16px 12px;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.shell-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .06);
+}
+
+.shell-user-av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--agua-d), var(--agua));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.shell-user-info { flex: 1; min-width: 0; }
+
+.shell-user-nm {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shell-user-pl {
+  font-size: 11px;
+  color: var(--agua-l);
+}
+
+.shell-logout {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, .5);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+
+.shell-logout:hover {
+  color: #fff;
+  background: rgba(224, 112, 112, .35);
+}
+
+/* ─── Main ─── */
+.shell-main {
+  margin-left: var(--sw);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+.shell-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  min-height: 64px;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.shell-hd-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.shell-hamburger {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 7px 9px;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--slate-m);
+  transition: all .15s;
+  flex-shrink: 0;
+}
+
+.shell-hamburger:hover {
+  background: var(--mint);
+  border-color: var(--agua-l);
+}
+
+.shell-hd-eyebrow {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 300;
+}
+
+.shell-hd-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--slate);
+  letter-spacing: -.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shell-hd-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.shell-content {
+  flex: 1;
+  padding: 28px;
+  max-width: 1500px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.shell-content.full-bleed {
+  padding: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Overlay móvil */
+.shell-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .4);
+  z-index: 49;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .shell-sidebar { transform: translateX(-100%); }
+  .shell-sidebar.open { transform: translateX(0); }
+  .shell-overlay.show { display: block; }
+  .shell-main { margin-left: 0; }
+  .shell-hamburger { display: flex; }
+  .shell-content { padding: 18px 16px; }
+  .shell-header { padding: 0 16px; }
+}
+
+@media (max-width: 560px) {
+  .shell-header { min-height: 58px; }
+  .shell-hd-title { font-size: 17px; }
+  .shell-hd-eyebrow { display: none; }
+}

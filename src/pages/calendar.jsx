@@ -1,6 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import CreateEvent from "../components/CreateEvent.jsx";
-import SidebarCards from "../components/SidebarCards";
+import AppShell from "../components/AppShell";
+import { useI18n } from "../i18n/index.jsx";
+import { apiRequest } from "../utils/apiClient";
 
 /* ─────────────────────────────────────────
    DATA
@@ -26,15 +28,6 @@ const EVENTOS_INIT = [
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEMANA_L = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 const DIAS_SEMANA_S = ["L","M","X","J","V","S","D"];
-
-const NAV_ITEMS = [
-  { id:"dashboard",  label:"Dashboard",  icon:"◉" },
-  { id:"gastos",     label:"Gastos",     icon:"💳" },
-  { id:"metas",      label:"Metas",      icon:"🎯" },
-  { id:"calendario", label:"Calendario", icon:"📅" },
-  { id:"chatbot",    label:"Chatbot IA", icon:"🤖" },
-  { id:"perfil",     label:"Mi Perfil",  icon:"👤" },
-];
 
 /* ─────────────────────────────────────────
    STYLES
@@ -395,6 +388,7 @@ const TODAY = new Date();
 const FORM_DEF = { desc: "", tipo: "pago", monto: "", dia: "", icono: "💳", recurrente: false };
 
 export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, user = null }) {
+  const { t } = useI18n();
   const [year, setYear]   = useState(TODAY.getFullYear());
   const [month, setMonth] = useState(TODAY.getMonth());
   const [view, setView]   = useState("mes"); // mes | semana | lista
@@ -404,14 +398,31 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
   const [form, setForm]           = useState({ ...FORM_DEF });
   const [editId, setEditId]       = useState(null);
   const [toast, setToast]         = useState(null);
-  const [activeNav, setActiveNav] = useState("calendario");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const showToast = (m) => { setToast(m); setTimeout(() => setToast(null), 3000); };
 
+  useEffect(() => {
+    if (isGuest) return;
+    let alive = true;
+    void apiRequest("/events")
+      .then((data) => { if (alive && Array.isArray(data)) setEventos(data); })
+      .catch(() => null);
+    return () => { alive = false; };
+  }, [isGuest]);
+
+  const commitEventos = (updater) => {
+    setEventos(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (!isGuest) {
+        void apiRequest("/events", { method: "PUT", body: JSON.stringify({ events: next }) })
+          .then((saved) => { if (Array.isArray(saved)) setEventos(saved); })
+          .catch(() => null);
+      }
+      return next;
+    });
+  };
+
   const handleNavClick = (id) => {
-    setActiveNav(id);
-    setSidebarOpen(false);
     if (onNavigate) onNavigate(id);
   };
 
@@ -458,10 +469,10 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
     const colorMap = { ingreso: "#4CAF7D", pago: "#E07070", meta: "#7EC8C0" };
     const entry = { desc: form.desc, tipo: form.tipo, monto: montoFinal, dia: +form.dia, icono: form.icono, color: colorMap[form.tipo], recurrente: form.recurrente };
     if (editId) {
-      setEventos(prev => prev.map(e => e.id === editId ? { ...e, ...entry } : e));
+      commitEventos(prev => prev.map(e => e.id === editId ? { ...e, ...entry } : e));
       showToast("✓ Evento actualizado");
     } else {
-      setEventos(prev => [...prev, { id: Date.now(), ...entry }]);
+      commitEventos(prev => [...prev, { id: Date.now(), ...entry }]);
       showToast("✓ Evento añadido al calendario");
     }
     setShowModal(false);
@@ -482,11 +493,11 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
       color: colorMap[tipo] || "#7EC8C0",
       recurrente: Boolean(data.recurrente),
     };
-    setEventos(prev => [...prev, entry]);
+    commitEventos(prev => [...prev, entry]);
     showToast("✓ Evento añadido al calendario");
   };
 
-  const eliminar = (id) => { setEventos(prev => prev.filter(e => e.id !== id)); showToast("✓ Evento eliminado"); };
+  const eliminar = (id) => { commitEventos(prev => prev.filter(e => e.id !== id)); showToast("✓ Evento eliminado"); };
 
   // Week view data
   const weekStart = useMemo(() => {
@@ -515,7 +526,6 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
       {toast && <div className="calendar-toast">{toast}</div>}
 
       {/* Sidebar overlay */}
-      <div className={`sb-overlay${sidebarOpen ? " show" : ""}`} onClick={() => setSidebarOpen(false)} />
 
       {/* ── MODAL ── */}
       {showModal && !editId && (
@@ -593,54 +603,21 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
         </div>
       )}
 
-      <div className="app calendar-app">
-        {/* SIDEBAR */}
-        <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
-          <div className="sb-brand">
-            <div className="sb-ico">💎</div>
-            <span className="sb-txt">Savia</span>
-          </div>
-          <nav className="sb-nav">
-            {NAV_ITEMS.map(item => (
-              <button key={item.id} className={`nav-item${activeNav===item.id?" active":""}`}
-                onClick={() => handleNavClick(item.id)}>
-                <span className="nav-icon">{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
-            <SidebarCards onManage={() => handleNavClick("dashboard")} />
-          </nav>
-          <div className="sb-footer">
-            <div className="user-chip">
-              <div className="user-av">{user?.avatar || `${(user?.firstName?.[0] || user?.fullName?.[0] || "C").toUpperCase()}${(user?.lastName?.[0] || "").toUpperCase()}`.slice(0, 2)}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div className="user-nm">{user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva")}</div>
-                <div className="user-pl">{isGuest ? "⭐ Premium" : (user?.plan === "premium" ? "⭐ Premium" : "Plan gratuito")}</div>
-              </div>
-              {onLogout && <button className="logout-btn" title="Cerrar sesión" onClick={onLogout}>⏻</button>}
-            </div>
-          </div>
-        </aside>
-
-        <div className="main">
-          {/* HEADER */}
-          <header className="header">
-            <div className="hd-left">
-              <button className="hamburger" onClick={() => setSidebarOpen(v => !v)}>☰</button>
-              <div className="hd-titles">
-                <div className="hd-eye">Gestión financiera · {MESES[month]} {year}</div>
-                <div className="hd-title">Calendario</div>
-              </div>
-            </div>
-            <div className="hd-right">
-              <button className="btn-ghost" title="Exportar">📥</button>
-              <button className="btn-primary" onClick={() => openNew()}>
-                <span>＋</span>
-                <span className="label"> Nuevo evento</span>
-              </button>
-            </div>
-          </header>
-
+      <AppShell
+        active="calendario"
+        onNavigate={handleNavClick}
+        onLogout={onLogout}
+        user={user}
+        isGuest={isGuest}
+        eyebrow={`${t("calendar.subtitle")} · ${MESES[month]} ${year}`}
+        title={t("calendar.title")}
+        headerRight={(
+          <button className="btn-primary" onClick={() => openNew()}>
+            <span>＋</span>
+            <span className="label"> {t("calendar.newEvent").replace("+ ", "")}</span>
+          </button>
+        )}
+      >
           <div className="content">
 
             {/* MONTH NAV */}
@@ -950,8 +927,7 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
               </div>
             </div>
           </div>
-        </div>
-      </div>
+      </AppShell>
     </>
   );
 }
