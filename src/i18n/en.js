@@ -22,6 +22,7 @@ export default {
   "common.spanish": "Spanish",
   "common.english": "English",
   "common.accept": "Accept",
+  "common.peru": "Peru",
 
   // Cards
   "cards.title": "Cards",
@@ -329,8 +330,12 @@ export default {
   "demoExpenses.item3note": "Monthly subscription",
   "demoExpenses.item4desc": "Inkafarma Pharmacy",
   "demoExpenses.item4note": "Medication",
+  "demoExpenses.item5desc": "Luz del Sur Electric",
   "demoExpenses.item5note": "May bill",
+  "demoExpenses.item6desc": "Plaza Vea Supermarket",
+  "demoExpenses.item7desc": "Metropolitano Bus",
   "demoExpenses.item7note": "Card top-up",
+  "demoExpenses.item9desc": "Claro Internet",
   "demoExpenses.item9note": "Home plan",
   "demoExpenses.item10desc": "Bookstore",
   "demoExpenses.item10note": "Notebooks and supplies",

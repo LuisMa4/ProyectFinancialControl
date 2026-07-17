@@ -81,7 +81,7 @@ const buildTransacciones = (t) => [
   { id: 4, desc: "Netflix", cat: t("category.entertainment"), icon: "🎬", monto: -37.9, fecha: t("demo.tx4date"), tipo: "gasto" },
   { id: 5, desc: t("demo.tx5desc"), cat: t("category.health"), icon: "💊", monto: -62, fecha: t("demo.tx5date"), tipo: "gasto" },
   { id: 6, desc: t("demo.tx6desc"), cat: t("category.income"), icon: "💸", monto: 250, fecha: t("demo.tx6date"), tipo: "ingreso" },
-  { id: 7, desc: "Luz del Sur", cat: t("category.utilities"), icon: "⚡", monto: -89, fecha: t("demo.tx7date"), tipo: "gasto" },
+  { id: 7, desc: t("demoExpenses.item5desc"), cat: t("category.utilities"), icon: "⚡", monto: -89, fecha: t("demo.tx7date"), tipo: "gasto" },
 ];
 
 const buildMetas = (t) => [

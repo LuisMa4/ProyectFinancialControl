@@ -364,6 +364,13 @@ const Switch = ({ checked, onChange }) => (
 /* ─────────────────────────────────────────
    COMPONENT
 ───────────────────────────────────────── */
+const formatRegisteredDate = (value, locale) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
+};
+
 export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user = null, registeredAt, onUserUpdate = null }) {
   const { t, locale } = useI18n();
   const USUARIO_INIT = buildUsuarioInit(t);
@@ -377,7 +384,9 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
         moneda: user.currency || "PEN",
         idioma: user.language || "es",
         plan: user.plan || "free",
-        fechaRegistro: registeredAt || user.registeredAt || "",
+        // La cuenta demo usa la fecha traducida localmente en vez del
+        // texto sembrado en español en la base de datos.
+        fechaRegistro: isGuest ? USUARIO_INIT.fechaRegistro : (registeredAt || user.registeredAt || ""),
         avatar: user.avatar || `${(user.firstName?.[0] || user.fullName?.[0] || "C").toUpperCase()}${(user.lastName?.[0] || "").toUpperCase()}`.slice(0, 2),
         avatarColor: user.avatarColor || "#5AADA5",
         presupuestoMensual: user.monthlyBudget || 0,
@@ -694,8 +703,8 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="hero-email">{usuario.email}</div>
                 <div className="hero-tags">
                   <span className="hero-tag tag-plan">{isGuest ? t("common.premiumPlan") : t("common.freePlan")}</span>
-                  <span className="hero-tag tag-date">{t("profile.memberSince", { date: usuario.fechaRegistro })}</span>
-                  <span className="hero-tag tag-collab">🇵🇪 Lima, Perú</span>
+                  <span className="hero-tag tag-date">{t("profile.memberSince", { date: formatRegisteredDate(usuario.fechaRegistro, locale) })}</span>
+                  <span className="hero-tag tag-collab">🇵🇪 Lima, {t("common.peru")}</span>
                 </div>
               </div>
               <div className="hero-stats">
@@ -915,7 +924,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                       <div className="plan-ico">{isGuest ? "⭐" : "🌱"}</div>
                       <div className="plan-info">
                         <div className="plan-name">{isGuest ? t("register.planPremiumName") : t("register.planFreeName")}</div>
-                        <div className="plan-sub">{isGuest ? t("profile.renewalDate", { date: "Jun 12, 2026" }) : t("profile.noActiveRenewal")}</div>
+                        <div className="plan-sub">{isGuest ? t("profile.renewalDate", { date: new Date(2026, 5, 12).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" }) }) : t("profile.noActiveRenewal")}</div>
                       </div>
                       <div>
                         <div className="plan-price">{isGuest ? "S/ 19.90" : "S/ 0.00"}</div>

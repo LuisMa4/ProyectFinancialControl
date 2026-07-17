@@ -22,6 +22,7 @@ export default {
   "common.spanish": "Español",
   "common.english": "Inglés",
   "common.accept": "Aceptar",
+  "common.peru": "Perú",
 
   // Tarjetas
   "cards.title": "Tarjetas",
@@ -329,8 +330,12 @@ export default {
   "demoExpenses.item3note": "Suscripción mensual",
   "demoExpenses.item4desc": "Farmacia Inkafarma",
   "demoExpenses.item4note": "Medicamentos",
+  "demoExpenses.item5desc": "Luz del Sur",
   "demoExpenses.item5note": "Recibo mayo",
+  "demoExpenses.item6desc": "Plaza Vea",
+  "demoExpenses.item7desc": "Metropolitano",
   "demoExpenses.item7note": "Recarga tarjeta",
+  "demoExpenses.item9desc": "Claro Internet",
   "demoExpenses.item9note": "Plan Hogar",
   "demoExpenses.item10desc": "Librería",
   "demoExpenses.item10note": "Cuadernos y útiles",

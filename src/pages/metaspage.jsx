@@ -331,7 +331,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
   const { t, lang, locale } = useI18n();
   const METAS_INIT = useMemo(() => buildMetasInit(t, lang), [t, lang]);
   const PRIORIDAD_CFG = useMemo(() => buildPrioridadCfg(t), [t]);
-  const [metas, setMetas]         = useState(() => []);
+  const [metas, setMetas]         = useState(() => isGuest ? METAS_INIT : []);
   const [viewMode, setViewMode]   = useState("grid"); // grid | list
   const [filtro, setFiltro]       = useState("todas"); // todas | activas | completadas
   const [toast, setToast]         = useState(null);
@@ -356,8 +356,10 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   useEffect(() => {
-    void loadStoredGoals(isGuest ? METAS_INIT : []).then(setMetas);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // La cuenta demo usa el set de datos traducido localmente (ya
+    // inicializado arriba), nunca las filas sembradas en español en la BD.
+    if (isGuest) return;
+    void loadStoredGoals([]).then(setMetas);
   }, [isGuest]);
 
   const copyShareLink = async (link) => {

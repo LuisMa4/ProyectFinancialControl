@@ -18,11 +18,11 @@ const buildGastosInit = (t) => [
   { id:2,  desc:"Uber",                        cat:"transporte",   monto:18.90,  fecha:"2025-05-23", nota:"",                         recurrente:false },
   { id:3,  desc:"Netflix",                     cat:"entrete",      monto:37.90,  fecha:"2025-05-23", nota:t("demoExpenses.item3note"), recurrente:true  },
   { id:4,  desc:t("demoExpenses.item4desc"),  cat:"salud",        monto:62.00,  fecha:"2025-05-22", nota:t("demoExpenses.item4note"), recurrente:false },
-  { id:5,  desc:"Luz del Sur",                 cat:"servicios",    monto:89.00,  fecha:"2025-05-21", nota:t("demoExpenses.item5note"), recurrente:true  },
-  { id:6,  desc:"Plaza Vea",                   cat:"alimentacion", monto:134.20, fecha:"2025-05-20", nota:"",                         recurrente:false },
-  { id:7,  desc:"Metropolitano",               cat:"transporte",   monto:50.00,  fecha:"2025-05-19", nota:t("demoExpenses.item7note"), recurrente:false },
+  { id:5,  desc:t("demoExpenses.item5desc"),  cat:"servicios",    monto:89.00,  fecha:"2025-05-21", nota:t("demoExpenses.item5note"), recurrente:true  },
+  { id:6,  desc:t("demoExpenses.item6desc"),  cat:"alimentacion", monto:134.20, fecha:"2025-05-20", nota:"",                         recurrente:false },
+  { id:7,  desc:t("demoExpenses.item7desc"),  cat:"transporte",   monto:50.00,  fecha:"2025-05-19", nota:t("demoExpenses.item7note"), recurrente:false },
   { id:8,  desc:"Spotify",                     cat:"entrete",      monto:19.90,  fecha:"2025-05-18", nota:"",                         recurrente:true  },
-  { id:9,  desc:"Claro Internet",              cat:"servicios",    monto:89.00,  fecha:"2025-05-18", nota:t("demoExpenses.item9note"), recurrente:true  },
+  { id:9,  desc:t("demoExpenses.item9desc"),  cat:"servicios",    monto:89.00,  fecha:"2025-05-18", nota:t("demoExpenses.item9note"), recurrente:true  },
   { id:10, desc:t("demoExpenses.item10desc"), cat:"educacion",    monto:45.00,  fecha:"2025-05-15", nota:t("demoExpenses.item10note"), recurrente:false },
   { id:11, desc:"Cineplanet",                  cat:"entrete",      monto:38.00,  fecha:"2025-05-14", nota:t("demoExpenses.item11note"), recurrente:false },
   { id:12, desc:"KFC",                         cat:"alimentacion", monto:52.80,  fecha:"2025-05-13", nota:t("demoExpenses.item12note"), recurrente:false },
@@ -287,7 +287,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
   const { t, locale } = useI18n();
   const CATEGORIAS_DEF = useMemo(() => EXPENSE_CATEGORIES.map((c) => ({ ...c, name: t(c.nameKey) })), [t]);
   const GASTOS_INIT = useMemo(() => buildGastosInit(t), [t]);
-  const [gastos, setGastos]         = useState(() => getInitialExpenses(isGuest ? GASTOS_INIT : []));
+  const [gastos, setGastos]         = useState(() => isGuest ? GASTOS_INIT : getInitialExpenses([]));
   const [search, setSearch]         = useState("");
   const [catFilter, setCatFilter]   = useState("todas");
   const [soloRec, setSoloRec]       = useState(false);
@@ -312,8 +312,10 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
   };
 
   useEffect(() => {
-    void loadStoredExpenses(isGuest ? GASTOS_INIT : []).then(setGastos);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // La cuenta demo usa el set de datos traducido localmente (ya
+    // inicializado arriba), nunca las filas sembradas en español en la BD.
+    if (isGuest) return;
+    void loadStoredExpenses([]).then(setGastos);
   }, [isGuest]);
 
   const commitGastos = (updater) => {

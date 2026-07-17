@@ -579,11 +579,11 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
     return !getExpenseIntent(content);
   };
 
-  const sendMessage = async (text) => {
+  const sendMessage = async (text, options = {}) => {
     const content = (text || input).trim();
     if (!content || loading) return;
 
-    if (needsAiCall(content) && !hasKey) {
+    if (needsAiCall(content) && !hasKey && !options.skipKeyCheck) {
       pendingSendRef.current = content;
       setKeyError("");
       setShowKeyModal(true);
@@ -659,8 +659,7 @@ export default function ChatbotPage({ onNavigate, onLogout, isGuest = false, use
     pendingSendRef.current = null;
     if (toSend) {
       // Enviar de todos modos: el servidor responderá en modo local sin key.
-      setInput(toSend);
-      setTimeout(() => sendMessage(toSend), 0);
+      void sendMessage(toSend, { skipKeyCheck: true });
     }
   };
 

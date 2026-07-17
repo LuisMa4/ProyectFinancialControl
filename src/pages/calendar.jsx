@@ -10,15 +10,15 @@ import { apiRequest } from "../utils/apiClient";
 const buildEventosInit = (t) => [
   { id:1,  tipo:"pago",    desc:t("demoEvents.rent"),          monto:-1200, dia:1,  icono:"🏠", color:"#E07070", recurrente:true  },
   { id:2,  tipo:"ingreso", desc:t("demoEvents.salary"),        monto:+3600, dia:5,  icono:"💼", color:"#4CAF7D", recurrente:true  },
-  { id:3,  tipo:"pago",    desc:"Claro Internet",              monto:-89,   dia:5,  icono:"📡", color:"#E07070", recurrente:true  },
+  { id:3,  tipo:"pago",    desc:t("demoExpenses.item9desc"),   monto:-89,   dia:5,  icono:"📡", color:"#E07070", recurrente:true  },
   { id:4,  tipo:"meta",    desc:t("demoEvents.europeContrib"), monto:-400,  dia:6,  icono:"✈️", color:"#7EC8C0", recurrente:true  },
   { id:5,  tipo:"pago",    desc:"Netflix",                     monto:-37.90,dia:8,  icono:"🎬", color:"#E07070", recurrente:true  },
   { id:6,  tipo:"pago",    desc:"Spotify",                     monto:-19.90,dia:10, icono:"🎵", color:"#E07070", recurrente:true  },
   { id:7,  tipo:"ingreso", desc:t("demoEvents.transfer"),      monto:+250,  dia:12, icono:"💸", color:"#4CAF7D", recurrente:false },
   { id:8,  tipo:"pago",    desc:t("demoEvents.carInsurance"),  monto:-220,  dia:15, icono:"🚘", color:"#E07070", recurrente:true  },
   { id:9,  tipo:"meta",    desc:t("demoEvents.laptopContrib"), monto:-200,  dia:15, icono:"💻", color:"#C9A96E", recurrente:true  },
-  { id:10, tipo:"pago",    desc:"Luz del Sur",                 monto:-89,   dia:18, icono:"⚡", color:"#E07070", recurrente:true  },
-  { id:11, tipo:"pago",    desc:"Agua Sedapal",                monto:-42,   dia:20, icono:"💧", color:"#8AADA9", recurrente:true  },
+  { id:10, tipo:"pago",    desc:t("demoExpenses.item5desc"),   monto:-89,   dia:18, icono:"⚡", color:"#E07070", recurrente:true  },
+  { id:11, tipo:"pago",    desc:t("demoExpenses.item18desc"),  monto:-42,   dia:20, icono:"💧", color:"#8AADA9", recurrente:true  },
   { id:12, tipo:"ingreso", desc:t("demoEvents.freelance"),     monto:+800,  dia:22, icono:"🎨", color:"#4CAF7D", recurrente:false },
   { id:13, tipo:"pago",    desc:t("demoEvents.gym"),           monto:-80,   dia:25, icono:"🏋️",  color:"#E07070", recurrente:true  },
   { id:14, tipo:"meta",    desc:t("demoEvents.emergencyContrib"),monto:-300,dia:28, icono:"🛡️", color:"#5AADA5", recurrente:true  },
@@ -414,6 +414,8 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
   const showToast = (m) => { setToast(m); setTimeout(() => setToast(null), 3000); };
 
   useEffect(() => {
+    // La cuenta demo usa el set de datos traducido localmente (ya
+    // inicializado arriba), nunca las filas sembradas en español en la BD.
     if (isGuest) return;
     let alive = true;
     void apiRequest("/events")

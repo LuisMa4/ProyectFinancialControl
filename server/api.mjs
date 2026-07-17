@@ -606,16 +606,17 @@ const handleRequest = async (req, res) => {
     const passwordHash = hashPassword(password, salt);
     const avatar = `${firstName[0] || "U"}${lastName[0] || "N"}`.toUpperCase();
     const avatarColor = plan === "premium" ? "#5AADA5" : "#8AADA9";
-    const registeredAt = new Date().toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" });
+    const registeredAt = new Date().toISOString();
+    const language = getRequestLanguage(req);
 
     const insert = db.prepare(`
       INSERT INTO users (
         first_name, last_name, email, phone, password_hash, password_salt, plan,
         currency, language, timezone, avatar, avatar_color, monthly_budget, registered_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'es', 'America/Lima', ?, ?, 0, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'America/Lima', ?, ?, 0, ?)
     `);
 
-    const info = insert.run(firstName, lastName, email, phone, passwordHash, salt, plan, currency, avatar, avatarColor, registeredAt);
+    const info = insert.run(firstName, lastName, email, phone, passwordHash, salt, plan, currency, language, avatar, avatarColor, registeredAt);
     const user = db.prepare("SELECT * FROM users WHERE id = ?").get(info.lastInsertRowid);
     const token = createSession(user.id, rememberMe);
     return completeAuth(res, user, token);
