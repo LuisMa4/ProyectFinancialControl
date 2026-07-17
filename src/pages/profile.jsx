@@ -6,9 +6,9 @@ import { loadStoredExpenses } from "../utils/expensesStorage";
 import { loadStoredGoals } from "../utils/goalsStorage";
 
 /* ─────────────────────────────────────────
-   MOCK DATA
+   MOCK DATA (cuenta invitado)
 ───────────────────────────────────────── */
-const USUARIO_INIT = {
+const buildUsuarioInit = (t) => ({
   nombre: "Juan",
   apellido: "Pérez",
   email: "juan.perez@gmail.com",
@@ -16,16 +16,16 @@ const USUARIO_INIT = {
   moneda: "PEN",
   idioma: "es",
   plan: "premium",
-  fechaRegistro: "12 enero 2025",
+  fechaRegistro: t("demoProfile.registeredDate"),
   avatar: "JP",
   avatarColor: "#5AADA5",
   presupuestoMensual: 2500,
   timezone: "America/Lima",
-};
+});
 
-const USUARIO_EMPTY = {
-  nombre: "Cuenta",
-  apellido: "nueva",
+const buildUsuarioEmpty = (t) => ({
+  nombre: t("demoProfile.newAccountFirst"),
+  apellido: t("demoProfile.newAccountLast"),
   email: "",
   telefono: "",
   moneda: "PEN",
@@ -36,22 +36,15 @@ const USUARIO_EMPTY = {
   avatarColor: "#5AADA5",
   presupuestoMensual: 0,
   timezone: "America/Lima",
-};
+});
 
-const ACTIVIDAD = [
-  { id:1, tipo:"gasto",    desc:"Wong - Compras",       monto:-185.50, fecha:"Hoy, 10:32",   icon:"🛒" },
-  { id:2, tipo:"ingreso",  desc:"Sueldo Mayo",          monto:+3600,   fecha:"Hoy, 09:00",   icon:"💼" },
-  { id:3, tipo:"meta",     desc:'Abono "Viaje a Europa"',monto:-400,   fecha:"Ayer, 18:00",  icon:"✈️" },
-  { id:4, tipo:"gasto",    desc:"Netflix",              monto:-37.90,  fecha:"Ayer, 00:00",  icon:"🎬" },
-  { id:5, tipo:"meta",     desc:'Meta "Inglés" completada',monto:0,    fecha:"22 May",       icon:"🏆" },
-  { id:6, tipo:"gasto",    desc:"Farmacia",             monto:-62.00,  fecha:"21 May",       icon:"💊" },
-];
-
-const ESTADISTICAS = [
-  { label:"Gastos registrados", val:"20", icon:"💳", color:"#7EC8C0" },
-  { label:"Metas activas",      val:"4",  icon:"🎯", color:"#5AADA5" },
-  { label:"Meses de uso",       val:"5",  icon:"📅", color:"#C9A96E" },
-  { label:"Ahorro acumulado",   val:"S/ 8,170", icon:"💰", color:"#4CAF7D" },
+const buildActividad = (t) => [
+  { id:1, tipo:"gasto",    desc:t("demoProfile.act1desc"),       monto:-185.50, fecha:t("demo.tx1date"),   icon:"🛒" },
+  { id:2, tipo:"ingreso",  desc:t("demo.tx2desc"),          monto:+3600,   fecha:t("demo.tx2date"),   icon:"💼" },
+  { id:3, tipo:"meta",     desc:t("demoProfile.act3desc"), monto:-400,   fecha:t("demoProfile.yesterday1800"),  icon:"✈️" },
+  { id:4, tipo:"gasto",    desc:"Netflix",              monto:-37.90,  fecha:t("demo.tx4date"),  icon:"🎬" },
+  { id:5, tipo:"meta",     desc:t("demoProfile.act5desc"),monto:0,    fecha:t("demoProfile.may22"),       icon:"🏆" },
+  { id:6, tipo:"gasto",    desc:t("demoProfile.act6desc"),             monto:-62.00,  fecha:t("demoProfile.may21"),       icon:"💊" },
 ];
 
 const AVATAR_COLORS = [
@@ -342,7 +335,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 /* ─────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────── */
-const getPwStrength = (pw) => {
+const getPwStrength = (pw, t) => {
   if (!pw) return { w: 0, color: "var(--border)", label: "" };
   let s = 0;
   if (pw.length >= 8)        s++;
@@ -350,11 +343,11 @@ const getPwStrength = (pw) => {
   if (/[0-9]/.test(pw))     s++;
   if (/[^A-Za-z0-9]/.test(pw)) s++;
   const map = [
-    { w:20,  color:"#E07070", label:"Muy débil" },
-    { w:40,  color:"#E0A870", label:"Débil" },
-    { w:65,  color:"#E0D070", label:"Regular" },
-    { w:85,  color:"#7EC8C0", label:"Buena" },
-    { w:100, color:"#4CAF7D", label:"Fuerte" },
+    { w:20,  color:"#E07070", label:t("register.strengthVeryWeak") },
+    { w:40,  color:"#E0A870", label:t("register.strengthWeak") },
+    { w:65,  color:"#E0D070", label:t("register.strengthFair") },
+    { w:85,  color:"#7EC8C0", label:t("register.strengthGood") },
+    { w:100, color:"#4CAF7D", label:t("register.strengthStrong") },
   ];
   return map[s];
 };
@@ -372,7 +365,9 @@ const Switch = ({ checked, onChange }) => (
    COMPONENT
 ───────────────────────────────────────── */
 export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user = null, registeredAt, onUserUpdate = null }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const USUARIO_INIT = buildUsuarioInit(t);
+  const USUARIO_EMPTY = buildUsuarioEmpty(t);
   const initialUser = user
     ? {
         nombre: user.firstName || "",
@@ -447,13 +442,20 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
     return Math.max(1, Math.round((Date.now() - parsed.getTime()) / (1000 * 60 * 60 * 24 * 30)));
   })();
 
-  const estadisticas = isGuest ? ESTADISTICAS : [
-    { label:"Gastos registrados", val:String(realExpenses.length), icon:"💳", color:"#7EC8C0" },
-    { label:"Metas activas",      val:String(realGoals.length), icon:"🎯", color:"#5AADA5" },
-    { label:"Meses de uso",       val:String(mesesUso), icon:"📅", color:"#C9A96E" },
-    { label:"Ahorro acumulado",   val:`S/ ${totalAhorrado.toLocaleString()}`, icon:"💰", color:"#4CAF7D" },
+  const ESTADISTICAS = [
+    { label:t("profile.expensesCount"), val:"20", icon:"💳", color:"#7EC8C0" },
+    { label:t("profile.activeGoals"),   val:"4",  icon:"🎯", color:"#5AADA5" },
+    { label:t("profile.monthsUsing"),   val:"5",  icon:"📅", color:"#C9A96E" },
+    { label:t("profile.accumulated"),   val:"S/ 8,170", icon:"💰", color:"#4CAF7D" },
   ];
-  const actividad = isGuest ? ACTIVIDAD : [...realExpenses]
+
+  const estadisticas = isGuest ? ESTADISTICAS : [
+    { label:t("profile.expensesCount"), val:String(realExpenses.length), icon:"💳", color:"#7EC8C0" },
+    { label:t("profile.activeGoals"),   val:String(realGoals.length), icon:"🎯", color:"#5AADA5" },
+    { label:t("profile.monthsUsing"),   val:String(mesesUso), icon:"📅", color:"#C9A96E" },
+    { label:t("profile.accumulated"),   val:`S/ ${totalAhorrado.toLocaleString()}`, icon:"💰", color:"#4CAF7D" },
+  ];
+  const actividad = isGuest ? buildActividad(t) : [...realExpenses]
     .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
     .slice(0, 6)
     .map((item) => ({
@@ -461,7 +463,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
       tipo: "gasto",
       desc: item.desc,
       monto: -(item.monto || 0),
-      fecha: new Date(`${item.fecha}T12:00:00`).toLocaleDateString("es-PE", { day: "numeric", month: "short" }),
+      fecha: new Date(`${item.fecha}T12:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short" }),
       icon: "💳",
     }));
 
@@ -498,9 +500,9 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
       await persistProfile(form);
       setUsuario({ ...form });
       setDirty(false);
-      showToast("✓ Perfil actualizado correctamente");
+      showToast(t("profile.saved"));
     } catch {
-      showToast("⚠ No se pudo guardar el perfil. Verifica la conexión.");
+      showToast(t("profile.saveError"));
     } finally {
       setSaving(false);
     }
@@ -514,16 +516,16 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
     setShowAvatarModal(false);
     try {
       await persistProfile(nextForm);
-      showToast("✓ Avatar actualizado");
+      showToast(t("profile.avatarUpdated"));
     } catch {
-      showToast("⚠ No se pudo guardar el avatar.");
+      showToast(t("profile.avatarSaveError"));
     }
   };
 
   const cambiarPassword = async () => {
-    if (!pwForm.actual) { showToast("⚠ Ingresa tu contraseña actual"); return; }
-    if (pwForm.nueva.length < 8) { showToast("⚠ La contraseña nueva debe tener al menos 8 caracteres"); return; }
-    if (pwForm.nueva !== pwForm.confirmar) { showToast("⚠ Las contraseñas no coinciden"); return; }
+    if (!pwForm.actual) { showToast(t("profile.errCurrentPassword")); return; }
+    if (pwForm.nueva.length < 8) { showToast(t("profile.errPasswordMin")); return; }
+    if (pwForm.nueva !== pwForm.confirmar) { showToast(t("profile.errPasswordMismatch")); return; }
     setSaving(true);
     try {
       await apiRequest("/auth/password", {
@@ -532,18 +534,30 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
       });
       setPwForm({ actual: "", nueva: "", confirmar: "" });
       setShowPwModal(false);
-      showToast("✓ Contraseña actualizada correctamente");
+      showToast(t("profile.passwordChanged"));
     } catch (error) {
       const message = (() => {
         try { return JSON.parse(error.message)?.error; } catch { return null; }
       })();
-      showToast(`⚠ ${message || "No se pudo cambiar la contraseña"}`);
+      showToast(`⚠ ${message || t("profile.passwordChangeError")}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const pwStrength = getPwStrength(pwForm.nueva);
+  const pwStrength = getPwStrength(pwForm.nueva, t);
+
+  const securityItems = [
+    { icon:"🔑", label:t("profile.secPassword"), sub:t("profile.secPasswordSub"), badge:"b-warn", badgeTxt:t("profile.secBadgeUpdateSoon"), action:t("profile.secChange"), onClick: () => setShowPwModal(true) },
+    { icon:"📱", label:t("profile.secTwoFactor"), sub:t("profile.secTwoFactorSub"), badge:"b-warn", badgeTxt:t("profile.secBadgeNotActive"), action:t("profile.secActivate"), onClick: () => showToast(t("profile.sec2faEnabled")) },
+    { icon:"🔗", label:t("profile.secSessions"), sub:t("profile.secSessionsSub"), badge:"b-green", badgeTxt:t("profile.secBadgeActive"), action:t("profile.secViewAll"), onClick: () => showToast(t("profile.secOnlyOneSession")) },
+    { icon:"📋", label:t("profile.secAccessHistory"), sub:t("profile.secAccessHistorySub"), badge:null, badgeTxt:null, action:t("profile.secViewHistory"), onClick: () => showToast(t("profile.comingSoon")) },
+  ];
+
+  const dangerItems = [
+    { desc:t("profile.dangerCloseSessions"), hint:t("profile.dangerCloseSessionsHint"), btn:t("profile.dangerCloseSessionsBtn"), onOk: () => showToast(t("profile.dangerSessionsClosed")) },
+    { desc:t("profile.dangerDeleteAccount"), hint:t("profile.dangerDeleteAccountHint"), btn:t("profile.dangerDeleteAccountBtn"), onOk: () => showToast(t("profile.dangerAccountDeleted")) },
+  ];
 
   return (
     <>
@@ -558,8 +572,8 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
             <div className="confirm-title">{confirm.title}</div>
             <div className="confirm-msg">{confirm.msg}</div>
             <div className="confirm-btns">
-              <button className="btn-confirm-cancel" onClick={() => setConfirm(null)}>Cancelar</button>
-              <button className="btn-confirm-ok" onClick={() => { confirm.onOk(); setConfirm(null); }}>{confirm.label || "Confirmar"}</button>
+              <button className="btn-confirm-cancel" onClick={() => setConfirm(null)}>{t("common.cancel")}</button>
+              <button className="btn-confirm-ok" onClick={() => { confirm.onOk(); setConfirm(null); }}>{confirm.label || t("common.confirm")}</button>
             </div>
           </div>
         </div>
@@ -570,7 +584,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
         <div className="overlay" onClick={e => e.target === e.currentTarget && setShowAvatarModal(false)}>
           <div className="modal">
             <div className="modal-hd">
-              <h2 className="modal-title">Cambiar avatar</h2>
+              <h2 className="modal-title">{t("profile.changeAvatar")}</h2>
               <button className="modal-close" onClick={() => setShowAvatarModal(false)}>✕</button>
             </div>
             <div className="modal-body">
@@ -579,7 +593,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                   {avEmoji || usuario.avatar}
                 </div>
               </div>
-              <div className="av-section">Emoji o inicial</div>
+              <div className="av-section">{t("profile.emojiOrInitial")}</div>
               <div className="av-emoji-grid">
                 {AVATAR_EMOJIS.map(e => (
                   <button key={e} className={`av-emoji-opt${avEmoji===e?" sel":""}`}
@@ -589,7 +603,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                   style={{ fontSize: 16, fontWeight: 700, color: "var(--slate-m)" }}
                   onClick={() => setAvEmoji("")}>{usuario.avatar}</button>
               </div>
-              <div className="av-section">Color de fondo</div>
+              <div className="av-section">{t("profile.backgroundColor")}</div>
               <div className="av-color-grid">
                 {AVATAR_COLORS.map(c => (
                   <div key={c} className={`av-color-opt${avColor===c?" sel":""}`}
@@ -598,8 +612,8 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
               </div>
             </div>
             <div className="modal-foot">
-              <button className="btn-cancel" onClick={() => setShowAvatarModal(false)}>Cancelar</button>
-              <button className="btn-save" onClick={guardarAvatar}>Guardar avatar</button>
+              <button className="btn-cancel" onClick={() => setShowAvatarModal(false)}>{t("common.cancel")}</button>
+              <button className="btn-save" onClick={guardarAvatar}>{t("profile.saveAvatar")}</button>
             </div>
           </div>
         </div>
@@ -610,14 +624,14 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
         <div className="overlay" onClick={e => e.target === e.currentTarget && setShowPwModal(false)}>
           <div className="modal">
             <div className="modal-hd">
-              <h2 className="modal-title">Cambiar contraseña</h2>
+              <h2 className="modal-title">{t("profile.changePassword")}</h2>
               <button className="modal-close" onClick={() => setShowPwModal(false)}>✕</button>
             </div>
             <div className="modal-body">
               {[
-                ["actual",    "Contraseña actual",   "Tu contraseña de acceso"],
-                ["nueva",     "Nueva contraseña",    "Mínimo 8 caracteres"],
-                ["confirmar", "Confirmar contraseña","Repite la nueva contraseña"],
+                ["actual",    t("profile.currentPassword"), t("profile.currentPasswordPh")],
+                ["nueva",     t("profile.newPassword"),      t("profile.newPasswordPh")],
+                ["confirmar", t("profile.confirmPassword"), t("profile.confirmPasswordPh")],
               ].map(([k, label, ph]) => (
                 <div className="fg" key={k} style={{ marginBottom: 16 }}>
                   <label className="fl">{label}</label>
@@ -641,9 +655,9 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
               ))}
             </div>
             <div className="modal-foot">
-              <button className="btn-cancel" onClick={() => setShowPwModal(false)}>Cancelar</button>
+              <button className="btn-cancel" onClick={() => setShowPwModal(false)}>{t("common.cancel")}</button>
               <button className="btn-save" onClick={cambiarPassword} disabled={saving}>
-                {saving ? "Guardando…" : "Actualizar contraseña"}
+                {saving ? t("common.saving") : t("profile.updatePassword")}
               </button>
             </div>
           </div>
@@ -679,19 +693,19 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="hero-name">{usuario.nombre} {usuario.apellido}</div>
                 <div className="hero-email">{usuario.email}</div>
                 <div className="hero-tags">
-                  <span className="hero-tag tag-plan">{isGuest ? "⭐ Plan Premium" : "Plan gratuito"}</span>
-                  <span className="hero-tag tag-date">📅 Miembro desde {usuario.fechaRegistro}</span>
+                  <span className="hero-tag tag-plan">{isGuest ? t("common.premiumPlan") : t("common.freePlan")}</span>
+                  <span className="hero-tag tag-date">{t("profile.memberSince", { date: usuario.fechaRegistro })}</span>
                   <span className="hero-tag tag-collab">🇵🇪 Lima, Perú</span>
                 </div>
               </div>
               <div className="hero-stats">
                 <div className="hero-stat">
                   <div className="hero-stat-val">{isGuest ? "S/ 8,170" : `S/ ${totalAhorrado.toLocaleString()}`}</div>
-                  <div className="hero-stat-lbl">Total ahorrado</div>
+                  <div className="hero-stat-lbl">{t("profile.totalSaved")}</div>
                 </div>
                 <div className="hero-stat">
                   <div className="hero-stat-val">{isGuest ? "S/ 1,700" : `S/ ${Math.max(0, (Number(usuario.presupuestoMensual) || 0) - gastosMes).toLocaleString()}`}</div>
-                  <div className="hero-stat-lbl">Saldo libre</div>
+                  <div className="hero-stat-lbl">{t("profile.freeBalance")}</div>
                 </div>
               </div>
             </div>
@@ -706,9 +720,9 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="card" style={{animationDelay:".1s"}}>
                   <div className="section-tabs">
                     {[
-                      ["personal",       "👤 Personal"],
-                      ["seguridad",      "🔒 Seguridad"],
-                      ["notificaciones", "🔔 Notificaciones"],
+                      ["personal",       t("profile.personal")],
+                      ["seguridad",      t("profile.security")],
+                      ["notificaciones", t("profile.notifications")],
                     ].map(([k,l]) => (
                       <button key={k} className={`stab${tab===k?" on":""}`} onClick={() => setTab(k)}>{l}</button>
                     ))}
@@ -719,59 +733,58 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                     <div className="card-body">
                       <div className="form-grid">
                         <div className="fg">
-                          <label className="fl">Nombre</label>
+                          <label className="fl">{t("register.firstName")}</label>
                           <input className="fi" value={form.nombre} onChange={handleFormChange("nombre")} />
                         </div>
                         <div className="fg">
-                          <label className="fl">Apellido</label>
+                          <label className="fl">{t("register.lastName")}</label>
                           <input className="fi" value={form.apellido} onChange={handleFormChange("apellido")} />
                         </div>
                         <div className="fg full">
-                          <label className="fl">Correo electrónico</label>
+                          <label className="fl">{t("register.email")}</label>
                           <div className="fi-prefix">
                             <span className="fi-prefix-ico">✉</span>
                             <input className="fi" type="email" value={form.email} onChange={handleFormChange("email")} />
                           </div>
                         </div>
                         <div className="fg">
-                          <label className="fl">Teléfono</label>
+                          <label className="fl">{t("register.phone")}</label>
                           <div className="fi-prefix">
                             <span className="fi-prefix-ico">📱</span>
                             <input className="fi" type="tel" value={form.telefono} onChange={handleFormChange("telefono")} />
                           </div>
                         </div>
                         <div className="fg">
-                          <label className="fl">Moneda principal</label>
+                          <label className="fl">{t("register.currencyLabel")}</label>
                           <select className="fi" value={form.moneda} onChange={handleFormChange("moneda")}>
-                            <option value="PEN">🇵🇪 Sol Peruano (S/)</option>
-                            <option value="USD">🇺🇸 Dólar ($)</option>
-                            <option value="EUR">🇪🇺 Euro (€)</option>
-                            <option value="COP">🇨🇴 Peso Colombiano</option>
-                            <option value="MXN">🇲🇽 Peso Mexicano</option>
+                            <option value="PEN">🇵🇪 {t("register.currencyPEN")}</option>
+                            <option value="USD">🇺🇸 {t("register.currencyUSD")}</option>
+                            <option value="EUR">🇪🇺 {t("register.currencyEUR")}</option>
+                            <option value="COP">🇨🇴 {t("register.currencyCOP")}</option>
+                            <option value="MXN">🇲🇽 {t("register.currencyMXN")}</option>
                           </select>
                         </div>
                         <div className="fg">
-                          <label className="fl">Presupuesto mensual (S/)</label>
+                          <label className="fl">{t("profile.monthlyBudget")} (S/)</label>
                           <div className="fi-prefix">
                             <span className="fi-prefix-ico">💰</span>
                             <input className="fi" type="number" value={form.presupuestoMensual} onChange={handleFormChange("presupuestoMensual")} />
                           </div>
                         </div>
                         <div className="fg">
-                          <label className="fl">Idioma</label>
+                          <label className="fl">{t("profile.languageLabel")}</label>
                           <select className="fi" value={form.idioma} onChange={handleFormChange("idioma")}>
-                            <option value="es">🇪🇸 Español</option>
-                            <option value="en">🇺🇸 English</option>
-                            <option value="pt">🇧🇷 Português</option>
+                            <option value="es">🇪🇸 {t("common.spanish")}</option>
+                            <option value="en">🇺🇸 {t("common.english")}</option>
                           </select>
                         </div>
                         <div className="fg">
-                          <label className="fl">Zona horaria</label>
+                          <label className="fl">{t("profile.timezoneLabel")}</label>
                           <select className="fi" value={form.timezone} onChange={handleFormChange("timezone")}>
-                            <option value="America/Lima">América/Lima (UTC-5)</option>
-                            <option value="America/Bogota">América/Bogotá (UTC-5)</option>
-                            <option value="America/Mexico_City">América/México (UTC-6)</option>
-                            <option value="America/Santiago">América/Santiago (UTC-4)</option>
+                            <option value="America/Lima">America/Lima (UTC-5)</option>
+                            <option value="America/Bogota">America/Bogota (UTC-5)</option>
+                            <option value="America/Mexico_City">America/Mexico City (UTC-6)</option>
+                            <option value="America/Santiago">America/Santiago (UTC-4)</option>
                           </select>
                         </div>
                       </div>
@@ -779,10 +792,10 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                       {dirty && (
                         <div style={{marginTop:20,display:"flex",justifyContent:"flex-end",gap:10}}>
                           <button className="btn-cancel" onClick={() => { setForm({...usuario}); setDirty(false); }}>
-                            Descartar
+                            {t("profile.discard")}
                           </button>
                           <button className="btn-primary" onClick={guardarPerfil} disabled={saving}>
-                            {saving ? "Guardando…" : "💾 Guardar cambios"}
+                            {saving ? t("common.saving") : t("profile.saveChanges")}
                           </button>
                         </div>
                       )}
@@ -792,12 +805,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                   {/* ── TAB: SEGURIDAD ── */}
                   {tab === "seguridad" && (
                     <div className="card-body">
-                      {[
-                        { icon:"🔑", label:"Contraseña", sub:"Última actualización: hace 3 meses", badge:"b-warn", badgeTxt:"Actualizar pronto", action:"Cambiar", onClick: () => setShowPwModal(true) },
-                        { icon:"📱", label:"Verificación en dos pasos", sub:"Protección extra con tu teléfono", badge:"b-warn", badgeTxt:"No activado", action:"Activar", onClick: () => showToast("✓ 2FA activado") },
-                        { icon:"🔗", label:"Sesiones activas", sub:"1 sesión activa · Lima, Perú", badge:"b-green", badgeTxt:"Activo", action:"Ver todo", onClick: () => showToast("Solo tienes 1 sesión activa") },
-                        { icon:"📋", label:"Historial de accesos", sub:"Ver cuándo y desde dónde entraste", badge:null, badgeTxt:null, action:"Ver historial", onClick: () => showToast("Función próximamente") },
-                      ].map((item, i) => (
+                      {securityItems.map((item, i) => (
                         <div className="security-item" key={i}>
                           <div className="sec-ico">{item.icon}</div>
                           <div className="sec-info">
@@ -811,11 +819,8 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
 
                       <div style={{marginTop:24}}>
                         <div className="danger-zone">
-                          <div className="danger-zone-title">⚠ Zona peligrosa</div>
-                          {[
-                            { desc:"Cerrar todas las sesiones", hint:"Se cerrará tu cuenta en todos los dispositivos.", btn:"Cerrar sesiones", onOk: () => showToast("✓ Sesiones cerradas") },
-                            { desc:"Eliminar cuenta", hint:"Esta acción es permanente e irreversible.", btn:"Eliminar cuenta", onOk: () => showToast("Cuenta eliminada (simulación)") },
-                          ].map((item, i) => (
+                          <div className="danger-zone-title">⚠ {t("profile.dangerZone")}</div>
+                          {dangerItems.map((item, i) => (
                             <div className="danger-item" key={i}>
                               <div>
                                 <div className="danger-desc">{item.desc}</div>
@@ -823,7 +828,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                               </div>
                               <button className="btn-danger" onClick={() => setConfirm({
                                 title: item.desc,
-                                msg: item.hint + " ¿Estás seguro de continuar?",
+                                msg: `${item.hint} ${t("profile.confirmContinue")}`,
                                 label: item.btn,
                                 onOk: item.onOk,
                               })}>{item.btn}</button>
@@ -838,13 +843,13 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                   {tab === "notificaciones" && (
                     <div className="card-body">
                       <div style={{fontSize:13,color:"var(--muted)",marginBottom:20,lineHeight:1.6}}>
-                        Controla qué notificaciones recibes y cómo te avisamos de actividad importante en tu cuenta.
+                        {t("profile.notifIntro")}
                       </div>
 
-                      <div style={{fontSize:12,fontWeight:600,color:"var(--muted)",letterSpacing:".5px",textTransform:"uppercase",marginBottom:10}}>Por correo</div>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--muted)",letterSpacing:".5px",textTransform:"uppercase",marginBottom:10}}>{t("profile.byEmail")}</div>
                       {[
-                        ["emailResumen",  "Resumen semanal",   "Recibe un resumen de tus finanzas cada lunes"],
-                        ["emailAlertas",  "Alertas de presupuesto", "Cuando superes el 80% de tu límite mensual"],
+                        ["emailResumen",  t("profile.notifWeeklySummary"),   t("profile.notifWeeklySummaryHint")],
+                        ["emailAlertas",  t("profile.notifBudgetAlerts"), t("profile.notifBudgetAlertsHint")],
                       ].map(([k,l,h]) => (
                         <div className="toggle-row" key={k}>
                           <div><div className="toggle-label">{l}</div><div className="toggle-hint">{h}</div></div>
@@ -852,12 +857,12 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                         </div>
                       ))}
 
-                      <div style={{fontSize:12,fontWeight:600,color:"var(--muted)",letterSpacing:".5px",textTransform:"uppercase",margin:"20px 0 10px"}}>Push (app)</div>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--muted)",letterSpacing:".5px",textTransform:"uppercase",margin:"20px 0 10px"}}>{t("profile.pushApp")}</div>
                       {[
-                        ["pushGastos",    "Nuevo gasto registrado",   "Notificación por cada gasto que añadas"],
-                        ["pushMetas",     "Progreso de metas",        "Cuando alcances un hito en tus metas"],
-                        ["pushPagos",     "Recordatorio de pagos",    "3 días antes de un vencimiento"],
-                        ["recordatorios", "Recordatorio de aporte",   "Aviso mensual para abonar a tus metas"],
+                        ["pushGastos",    t("profile.notifNewExpense"),   t("profile.notifNewExpenseHint")],
+                        ["pushMetas",     t("profile.notifGoalProgress"),        t("profile.notifGoalProgressHint")],
+                        ["pushPagos",     t("profile.notifPaymentReminder"),    t("profile.notifPaymentReminderHint")],
+                        ["recordatorios", t("profile.notifContribReminder"),   t("profile.notifContribReminderHint")],
                       ].map(([k,l,h]) => (
                         <div className="toggle-row" key={k}>
                           <div><div className="toggle-label">{l}</div><div className="toggle-hint">{h}</div></div>
@@ -865,8 +870,8 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                         </div>
                       ))}
 
-                      <button className="btn-primary" style={{marginTop:20}} onClick={() => showToast("✓ Preferencias de notificaciones guardadas")}>
-                        Guardar preferencias
+                      <button className="btn-primary" style={{marginTop:20}} onClick={() => showToast(t("profile.notifSaved"))}>
+                        {t("profile.savePreferences")}
                       </button>
                     </div>
                   )}
@@ -880,8 +885,8 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="card" style={{animationDelay:".18s"}}>
                   <div className="card-hd">
                     <div>
-                      <div className="card-title">Resumen</div>
-                      <div className="card-sub">Tu actividad en Savia</div>
+                      <div className="card-title">{t("calendar.summary")}</div>
+                      <div className="card-sub">{t("profile.yourActivityIn")}</div>
                     </div>
                   </div>
                   <div className="card-body">
@@ -901,30 +906,30 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="card" style={{animationDelay:".24s"}}>
                   <div className="card-hd">
                     <div>
-                      <div className="card-title">Mi Plan</div>
-                      <div className="card-sub">Suscripción activa</div>
+                      <div className="card-title">{t("profile.myPlan")}</div>
+                      <div className="card-sub">{t("profile.activeSubscription")}</div>
                     </div>
                   </div>
                   <div className="card-body">
                     <div className="plan-current">
                       <div className="plan-ico">{isGuest ? "⭐" : "🌱"}</div>
                       <div className="plan-info">
-                        <div className="plan-name">{isGuest ? "Plan Premium" : "Plan Gratuito"}</div>
-                        <div className="plan-sub">{isGuest ? "Renovación: 12 jun 2025" : "Sin renovación activa"}</div>
+                        <div className="plan-name">{isGuest ? t("register.planPremiumName") : t("register.planFreeName")}</div>
+                        <div className="plan-sub">{isGuest ? t("profile.renewalDate", { date: "Jun 12, 2026" }) : t("profile.noActiveRenewal")}</div>
                       </div>
                       <div>
                         <div className="plan-price">{isGuest ? "S/ 19.90" : "S/ 0.00"}</div>
-                        <div className="plan-period">/ mes</div>
+                        <div className="plan-period">/ {t("dash.month").toLowerCase()}</div>
                       </div>
                     </div>
                     <div className="feature-list">
                       {[
-                        [true,  "Registro ilimitado de gastos"],
-                        [true,  "Dashboard completo"],
-                        [true,  "Historial extendido (12+ meses)"],
-                        [true,  "Chatbot financiero con IA"],
-                        [true,  "Metas colaborativas"],
-                        [true,  "Alertas avanzadas"],
+                        [true,  t("profile.featUnlimitedExpenses")],
+                        [true,  t("profile.featFullDashboard")],
+                        [true,  t("register.featExtendedHistory")],
+                        [true,  t("register.featAiChatbot")],
+                        [true,  t("profile.featCollabGoals")],
+                        [true,  t("register.featAdvancedAlerts")],
                       ].map(([on, f], i) => (
                         <div className="feature-item" key={i}>
                           <div className={`feature-check${on?"":" off"}`}>{on?"✓":"—"}</div>
@@ -933,7 +938,7 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                       ))}
                     </div>
                     <button className="btn-upgrade" onClick={() => handleNavClick("planes")}>
-                      🔄 Gestionar suscripción
+                      🔄 {t("profile.manageSubscription")}
                     </button>
                   </div>
                 </div>
@@ -942,15 +947,15 @@ export default function PerfilPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="card" style={{animationDelay:".3s"}}>
                   <div className="card-hd">
                     <div>
-                      <div className="card-title">Actividad reciente</div>
-                      <div className="card-sub">Últimos movimientos</div>
+                      <div className="card-title">{t("profile.recentActivity")}</div>
+                      <div className="card-sub">{t("dash.recentSub")}</div>
                     </div>
                   </div>
                   <div className="card-body">
                     <div className="act-list">
                       {actividad.length === 0 ? (
                         <div style={{ textAlign:"center", padding:"28px 0", color:"var(--muted)", fontSize:13 }}>
-                          Aún no hay actividad registrada.
+                          {t("profile.noActivityYet")}
                         </div>
                       ) : actividad.map(a => (
                         <div className="act-item" key={a.id}>

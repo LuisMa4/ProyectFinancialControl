@@ -68,7 +68,7 @@ export default function App() {
       {currentPage === 'gastos' && <GastosPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
       {currentPage === 'metas' && <MetasPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
       {currentPage === 'calendario' && <CalendarioPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
-      {currentPage === 'chatbot' && <ChatbotPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
+      {currentPage === 'chatbot' && <ChatbotPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} onUserUpdate={setAccount} />}
       {currentPage === 'planes' && <PlanesPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} />}
       {currentPage === 'perfil' && <PerfilPage onLogout={goToLogin} onNavigate={navigateToPage} isGuest={isDemoAccount} user={account} registeredAt={account?.registeredAt || null} onUserUpdate={setAccount} />}
     </>

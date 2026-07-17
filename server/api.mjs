@@ -60,6 +60,9 @@ const userColumns = db.prepare("PRAGMA table_info(users)").all().map((column) =>
 if (!userColumns.includes("password_salt")) {
   db.exec("ALTER TABLE users ADD COLUMN password_salt TEXT DEFAULT ''");
 }
+if (!userColumns.includes("openai_api_key")) {
+  db.exec("ALTER TABLE users ADD COLUMN openai_api_key TEXT DEFAULT ''");
+}
 
 const sessionColumns = db.prepare("PRAGMA table_info(app_sessions)").all().map((column) => column.name);
 if (!sessionColumns.includes("token_hash")) {
@@ -192,6 +195,7 @@ const normalizeUserRow = (row) => {
     monthlyBudget: Number(row.monthly_budget || 0),
     registeredAt: row.registered_at || "",
     fullName: `${row.first_name} ${row.last_name}`.trim(),
+    hasOpenAiKey: Boolean(row.openai_api_key && row.openai_api_key.length),
   };
 };
 
@@ -412,9 +416,9 @@ const replaceExpenses = (userId, expenses) => {
   return getExpenses(userId);
 };
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || "gemini-2.5-flash";
-const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const OPENAI_FALLBACK_MODEL = "gpt-4o-mini";
+const ENV_OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 
 const monthKey = (date) => String(date).slice(0, 7);
 
@@ -491,45 +495,49 @@ const buildFinancialContext = (user, language = "es") => {
   return lines.join("\n");
 };
 
-const callGemini = async ({ systemPrompt, messages }) => {
-  if (!GEMINI_API_KEY) {
+const callOpenAI = async ({ systemPrompt, messages, apiKey }) => {
+  const key = apiKey || ENV_OPENAI_API_KEY;
+  if (!key) {
     return { content: "", source: "local", error: "missing-api-key" };
   }
 
-  const contents = messages.slice(-10).map((message) => ({
-    role: message.role === "assistant" ? "model" : "user",
-    parts: [{ text: String(message.content || "") }],
-  }));
+  const chatMessages = [
+    { role: "system", content: systemPrompt },
+    ...messages.slice(-10).map((message) => ({
+      role: message.role === "assistant" ? "assistant" : "user",
+      content: String(message.content || ""),
+    })),
+  ];
 
-  const requestBody = JSON.stringify({
-    system_instruction: { parts: [{ text: systemPrompt }] },
-    contents,
-    generationConfig: { temperature: 0.7, topP: 0.9, maxOutputTokens: 700 },
-  });
-
-  const modelsToTry = [...new Set([GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS])];
+  const modelsToTry = [...new Set([OPENAI_MODEL, OPENAI_FALLBACK_MODEL])];
   let lastError = null;
 
   for (const model of modelsToTry) {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-goog-api-key": GEMINI_API_KEY,
+          Authorization: `Bearer ${key}`,
         },
-        body: requestBody,
+        body: JSON.stringify({
+          model,
+          messages: chatMessages,
+          temperature: 0.7,
+          max_tokens: 700,
+        }),
       });
 
       if (!response.ok) {
-        lastError = `gemini-${response.status}`;
+        lastError = response.status === 401 ? "invalid-api-key" : `openai-${response.status}`;
+        if (response.status === 401) break;
         continue;
       }
 
       const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
+      const text = data.choices?.[0]?.message?.content?.trim();
       if (text) {
-        return { content: text, source: "gemini", error: null };
+        return { content: text, source: "openai", error: null };
       }
       lastError = "empty-response";
     } catch {
@@ -695,6 +703,16 @@ const handleRequest = async (req, res) => {
     return json(res, 200, normalizeUserRow(user));
   }
 
+  if (url.pathname === "/api/user/openai-key" && req.method === "PUT") {
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    const body = await readBody(req);
+    const apiKey = String(body?.apiKey || "").trim();
+    db.prepare("UPDATE users SET openai_api_key = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .run(apiKey, currentUser.id);
+    return json(res, 200, { ok: true, hasOpenAiKey: apiKey.length > 0 });
+  }
+
   if (url.pathname === "/api/cards") {
     const currentUser = getCurrentUserFromRequest(req);
     if (!currentUser) return json(res, 401, { error: "No autenticado" });
@@ -730,7 +748,7 @@ const handleRequest = async (req, res) => {
     if (!messages.length) return json(res, 400, { error: "Sin mensajes" });
 
     const systemPrompt = buildFinancialContext(currentUser, language);
-    const reply = await callGemini({ systemPrompt, messages });
+    const reply = await callOpenAI({ systemPrompt, messages, apiKey: currentUser.openai_api_key });
     return json(res, 200, reply);
   }
 
