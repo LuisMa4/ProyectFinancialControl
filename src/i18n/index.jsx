@@ -4,16 +4,13 @@ import es from "./es";
 import en from "./en";
 import { apiRequest } from "../utils/apiClient";
 import { readAuthToken } from "../utils/authToken";
+import { LANGUAGE_STORAGE_KEY, readStoredLanguage } from "../utils/languageStorage";
 
-const LANGUAGE_STORAGE_KEY = "savia-language";
 const DICTIONARIES = { es, en };
 
 const I18nContext = createContext(null);
 
-export const readStoredLanguage = () => {
-  const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  return stored === "en" || stored === "es" ? stored : "es";
-};
+export { readStoredLanguage };
 
 export function I18nProvider({ children }) {
   const [lang, setLangState] = useState(readStoredLanguage);

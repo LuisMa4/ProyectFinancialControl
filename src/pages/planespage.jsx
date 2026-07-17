@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AppShell from "../components/AppShell";
+import { useI18n } from "../i18n/index.jsx";
 
 const S = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
@@ -232,69 +233,48 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--sl
 }
 `;
 
-const FEATURES = [
+const buildFeatures = (t) => [
   // [label, sub, free, premium, tag?]
-  ["Registro de gastos e ingresos",    "Ilimitado en ambos planes",         true,  true,  null],
-  ["Dashboard financiero",             "Métricas y gráficos esenciales",     true,  true,  null],
-  ["Historial de transacciones",       "Últimos 3 meses",                    true,  false, null],
-  ["Historial extendido",              "12+ meses de historial completo",    false, true,  "pro"],
-  ["Metas de ahorro",                  "Hasta 2 metas activas",              true,  false, null],
-  ["Metas ilimitadas",                 "Sin límite de metas simultáneas",    false, true,  null],
-  ["Metas colaborativas",              "Ahorra en equipo con otros",         false, true,  "pro"],
-  ["Calendario financiero",            "Pagos y recordatorios básicos",      true,  false, null],
-  ["Calendario avanzado",              "Recurrencias, alarmas y vista semanal", false, true, null],
-  ["Alertas de presupuesto",           "Avisos al 80% del límite",           true,  true,  null],
-  ["Alertas personalizadas",           "Reglas y umbrales a tu medida",      false, true,  "pro"],
-  ["Chatbot Fina con IA",              "10 consultas mensuales",             true,  false, null],
-  ["Chatbot ilimitado",                "Consultas sin límite + análisis",    false, true,  "new"],
-  ["Exportar datos (PDF / CSV)",       "Descarga tus reportes",              false, true,  null],
-  ["Conversión de monedas",            "Tipo de cambio en tiempo real",      true,  true,  null],
-  ["Soporte prioritario",              "Respuesta en menos de 24 horas",     false, true,  null],
+  [t("plans.feat1"),  t("plans.feat1sub"),  true,  true,  null],
+  [t("plans.feat2"),  t("plans.feat2sub"),  true,  true,  null],
+  [t("plans.feat3"),  t("plans.feat3sub"),  true,  false, null],
+  [t("plans.feat4"),  t("plans.feat4sub"),  false, true,  "pro"],
+  [t("plans.feat5"),  t("plans.feat5sub"),  true,  false, null],
+  [t("plans.feat6"),  t("plans.feat6sub"),  false, true,  null],
+  [t("plans.feat7"),  t("plans.feat7sub"),  false, true,  "pro"],
+  [t("plans.feat8"),  t("plans.feat8sub"),  true,  false, null],
+  [t("plans.feat9"),  t("plans.feat9sub"),  false, true,  null],
+  [t("plans.feat10"), t("plans.feat10sub"), true,  true,  null],
+  [t("plans.feat11"), t("plans.feat11sub"), false, true,  "pro"],
+  [t("plans.feat12"), t("plans.feat12sub"), true,  false, null],
+  [t("plans.feat13"), t("plans.feat13sub"), false, true,  "new"],
+  [t("plans.feat14"), t("plans.feat14sub"), false, true,  null],
+  [t("plans.feat15"), t("plans.feat15sub"), true,  true,  null],
+  [t("plans.feat16"), t("plans.feat16sub"), false, true,  null],
 ];
 
-const COMPARE_GROUPS = [
-  {
-    group: "Registro y seguimiento",
-    rows: [0,1,2,3],
-  },
-  {
-    group: "Metas de ahorro",
-    rows: [4,5,6],
-  },
-  {
-    group: "Calendario y alertas",
-    rows: [7,8,9,10],
-  },
-  {
-    group: "IA y exportación",
-    rows: [11,12,13,14,15],
-  },
+const buildCompareGroups = (t) => [
+  { group: t("plans.groupTracking"), rows: [0,1,2,3] },
+  { group: t("plans.groupGoals"), rows: [4,5,6] },
+  { group: t("plans.groupCalendar"), rows: [7,8,9,10] },
+  { group: t("plans.groupAi"), rows: [11,12,13,14,15] },
 ];
 
-const FAQS = [
-  {
-    q: "¿Puedo cambiar de plan en cualquier momento?",
-    a: "Sí. Puedes actualizar a Premium o volver al plan gratuito cuando quieras. Si bajas de plan, mantendrás el acceso Premium hasta el final del período facturado.",
-  },
-  {
-    q: "¿Hay un período de prueba gratuita del plan Premium?",
-    a: "Sí, ofrecemos 14 días de prueba gratuita del plan Premium sin necesidad de tarjeta de crédito. Al finalizar, se te pedirá que elijas un plan.",
-  },
-  {
-    q: "¿Cómo funciona el pago anual?",
-    a: "El plan anual se cobra una sola vez por S/ 96 (equivalente a S/ 8/mes) en lugar de S/ 10/mes. Ahorras S/ 24 al año comparado con el pago mensual.",
-  },
-  {
-    q: "¿Mis datos están seguros si cancelo?",
-    a: "Absolutamente. Tienes 30 días para exportar toda tu información antes de que se elimine definitivamente. Nunca vendemos ni compartimos tus datos con terceros.",
-  },
-  {
-    q: "¿Puedo usar FinVerde en varios dispositivos?",
-    a: "Sí, tu cuenta funciona en web, móvil y tablet. El plan Premium permite hasta 3 sesiones activas simultáneas.",
-  },
+const buildFaqs = (t) => [
+  { q: t("plans.faq1q"), a: t("plans.faq1a") },
+  { q: t("plans.faq2q"), a: t("plans.faq2a") },
+  { q: t("plans.faq3q"), a: t("plans.faq3a") },
+  { q: t("plans.faq4q"), a: t("plans.faq4a") },
+  { q: t("plans.faq5q"), a: t("plans.faq5a") },
 ];
 
 export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user = null }) {
+  const { t } = useI18n();
+  const FEATURES = buildFeatures(t);
+  const COMPARE_GROUPS = buildCompareGroups(t);
+  const FAQS = buildFaqs(t);
+  const tagLabel = (tag) => tag === "new" ? t("plans.tagNew") : tag === "pro" ? t("plans.tagPro") : t("plans.tagSoon");
+
   const [billing, setBilling]       = useState("mensual"); // mensual | anual
   const [showCompare, setShowCompare] = useState(false);
   const [openFaq, setOpenFaq]       = useState(null);
@@ -306,15 +286,15 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
   const precioMensual = 10;
   const precioAnual   = 8; // por mes
   const precio = billing === "anual" ? precioAnual : precioMensual;
-  const displayName = user?.fullName || user?.email || (isGuest ? "Juan Pérez" : "Cuenta nueva");
+  const displayName = user?.fullName || user?.email || (isGuest ? "Juan Pérez" : t("common.newAccount"));
 
   const handleSelect = (plan) => {
     if (plan === "free") {
       setCurrentPlan("free");
-      showToast("✓ Cambiado al plan Gratuito");
+      showToast(t("plans.switchedToFree"));
     } else {
       setCurrentPlan("premium");
-      showToast("🎉 ¡Plan Premium activado! Disfruta de todas las funciones");
+      showToast(t("plans.premiumActivated"));
     }
   };
 
@@ -332,8 +312,8 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
         onLogout={onLogout}
         user={user}
         isGuest={isGuest}
-        eyebrow={`Cuenta · ${displayName}`}
-        title="Planes y Suscripción"
+        eyebrow={t("plans.accountEyebrow", { name: displayName })}
+        title={t("plans.pageTitle")}
       >
           <div className="content">
 
@@ -341,23 +321,21 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
             <div className="hero">
               <div className="hero-eyebrow">
                 <div className="hero-eyebrow-dot" />
-                Sin compromisos · Cancela cuando quieras
+                {t("plans.noCommitment")}
               </div>
               <h1 className="hero-title">
-                El plan perfecto para<br /><em>tus finanzas</em>
+                {t("plans.heroTitle1")}<br /><em>{t("plans.heroTitle2")}</em>
               </h1>
-              <p className="hero-sub">
-                Comienza gratis y escala cuando lo necesites. Sin cobros ocultos, sin letras pequeñas.
-              </p>
+              <p className="hero-sub">{t("plans.heroSub")}</p>
               {/* Billing toggle */}
               <div className="billing-toggle">
                 <button className={`bt-opt${billing === "mensual" ? " on" : ""}`}
                   onClick={() => setBilling("mensual")}>
-                  Mensual
+                  {t("plans.monthly")}
                 </button>
                 <button className={`bt-opt${billing === "anual" ? " on" : ""}`}
                   onClick={() => setBilling("anual")}>
-                  Anual
+                  {t("plans.yearly")}
                   <span className="save-badge">-20%</span>
                 </button>
               </div>
@@ -371,11 +349,11 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
                 <div className="plan-stripe" style={{ background: "var(--agua-l)" }} />
                 <div className="plan-header">
                   <div className="plan-icon-wrap" style={{ background: "var(--mint)" }}>🌱</div>
-                  <div className="plan-name">Gratuito</div>
-                  <div className="plan-desc">Todo lo esencial para empezar a ordenar tus finanzas personales sin costo alguno.</div>
+                  <div className="plan-name">{t("register.planFreeName")}</div>
+                  <div className="plan-desc">{t("plans.freeDesc")}</div>
                   <div className="price-wrap">
                     <div className="price-amount free">S/ 0</div>
-                    <div className="price-period" style={{ marginBottom:8 }}>&nbsp;/ siempre</div>
+                    <div className="price-period" style={{ marginBottom:8 }}>&nbsp;/ {t("plans.forever")}</div>
                   </div>
                 </div>
 
@@ -383,14 +361,14 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
                   className={`plan-cta cta-free`}
                   onClick={() => handleSelect("free")}
                   style={currentPlan === "free" ? { background:"var(--agua-p)", borderColor:"var(--agua)", color:"var(--agua-d)" } : {}}>
-                  {currentPlan === "free" ? "✓ Plan actual" : "Comenzar gratis"}
+                  {currentPlan === "free" ? t("plans.currentPlan") : t("plans.startFree")}
                 </button>
                 <div className="plan-trial" style={{ paddingBottom:8 }}>
-                  <span>Sin tarjeta de crédito</span>
+                  <span>{t("plans.noCreditCard")}</span>
                 </div>
 
                 <div className="plan-features">
-                  <div className="features-label">Incluye</div>
+                  <div className="features-label">{t("plans.includes")}</div>
                   {FEATURES.slice(0, 8).map((f, i) => (
                     <div className="feature-item" key={i}>
                       <div className={`feat-check${f[2] ? " yes" : " no"}`}>
@@ -399,7 +377,7 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
                       <div className="feat-info">
                         <div className={`feat-label${!f[2] ? " dimmed" : ""}`}>
                           {f[0]}
-                          {f[4] && f[2] && <span className={`feat-tag tag-${f[4]}`}>{f[4] === "new" ? "Nuevo" : f[4] === "pro" ? "Pro" : "Próximo"}</span>}
+                          {f[4] && f[2] && <span className={`feat-tag tag-${f[4]}`}>{tagLabel(f[4])}</span>}
                         </div>
                         {f[1] && <div className="feat-sub">{f[1]}</div>}
                       </div>
@@ -410,12 +388,12 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
 
               {/* ── PREMIUM ── */}
               <div className="plan-card featured">
-                <div className="popular-badge">⭐ Más popular</div>
+                <div className="popular-badge">⭐ {t("plans.mostPopular")}</div>
                 <div className="plan-stripe" style={{ background: "linear-gradient(90deg, var(--agua-d), var(--agua))" }} />
                 <div className="plan-header featured">
                   <div className="plan-icon-wrap" style={{ background: "linear-gradient(135deg,var(--agua-d),var(--agua))", boxShadow:"0 4px 14px rgba(90,173,165,.3)" }}>⭐</div>
-                  <div className="plan-name">Premium</div>
-                  <div className="plan-desc">Acceso completo a todas las funciones. Ideal para quienes toman en serio su salud financiera.</div>
+                  <div className="plan-name">{t("register.planPremiumName")}</div>
+                  <div className="plan-desc">{t("plans.premiumDesc")}</div>
                   <div className="price-wrap" style={{ alignItems:"flex-start", flexDirection:"column", gap:0 }}>
                     {billing === "anual" && (
                       <div style={{ display:"flex", alignItems:"center", gap:4 }}>
@@ -426,11 +404,11 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
                     <div style={{ display:"flex", alignItems:"flex-end", gap:4 }}>
                       <span className="price-currency">S/</span>
                       <span className="price-amount">{precio}</span>
-                      <span className="price-period">&nbsp;/ mes</span>
+                      <span className="price-period">&nbsp;/ {t("dash.month").toLowerCase()}</span>
                     </div>
                     {billing === "anual" && (
                       <div className="price-anual-note">
-                        💡 Facturado como S/ {precio * 12} al año · ahorras S/ {(precioMensual - precio) * 12}
+                        {t("plans.billedYearly", { total: precio * 12, saved: (precioMensual - precio) * 12 })}
                       </div>
                     )}
                   </div>
@@ -440,15 +418,15 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
                   className="plan-cta cta-premium"
                   onClick={() => handleSelect("premium")}
                   style={currentPlan === "premium" ? { background:"var(--slate)", boxShadow:"none" } : {}}>
-                  {currentPlan === "premium" ? "✓ Plan actual" : billing === "anual" ? `Suscribirme · S/ ${precio * 12}/año` : `Suscribirme · S/ ${precio}/mes`}
+                  {currentPlan === "premium" ? t("plans.currentPlan") : billing === "anual" ? t("plans.subscribeYearly", { total: precio * 12 }) : t("plans.subscribeMonthly", { price: precio })}
                 </button>
                 <div className="plan-trial">
                   <span>🎁</span>
-                  <span>14 días de prueba gratis · Sin tarjeta</span>
+                  <span>{t("plans.freeTrial")}</span>
                 </div>
 
                 <div className="plan-features">
-                  <div className="features-label">Todo del gratuito, más</div>
+                  <div className="features-label">{t("plans.everythingInFree")}</div>
                   {FEATURES.map((f, i) => {
                     // show only premium-exclusive or all features briefly
                     if (i < 3) return null; // skip basic free ones
@@ -460,7 +438,7 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
                         <div className="feat-info">
                           <div className={`feat-label${!f[3] ? " dimmed" : ""}`}>
                             {f[0]}
-                            {f[4] && f[3] && <span className={`feat-tag tag-${f[4]}`}>{f[4] === "new" ? "Nuevo" : f[4] === "pro" ? "Pro" : "Próximo"}</span>}
+                            {f[4] && f[3] && <span className={`feat-tag tag-${f[4]}`}>{tagLabel(f[4])}</span>}
                           </div>
                           {f[1] && <div className="feat-sub">{f[1]}</div>}
                         </div>
@@ -475,7 +453,7 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
             {/* ── COMPARISON TABLE ── */}
             <div className="compare-wrap">
               <button className="compare-toggle" onClick={() => setShowCompare(v => !v)}>
-                <span>{showCompare ? "Ocultar" : "Ver"} comparación completa</span>
+                <span>{showCompare ? t("plans.hide") : t("plans.view")} {t("plans.fullComparison")}</span>
                 <span className={`compare-arrow${showCompare ? " open" : ""}`}>▼</span>
               </button>
 
@@ -484,9 +462,9 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
                   <table className="compare-table">
                     <thead>
                       <tr>
-                        <th style={{ width:"55%" }}>Funcionalidad</th>
-                        <th className="col-plan" style={{ textAlign:"center" }}>🌱 Gratuito</th>
-                        <th className="col-plan" style={{ textAlign:"center" }}>⭐ Premium</th>
+                        <th style={{ width:"55%" }}>{t("plans.featureCol")}</th>
+                        <th className="col-plan" style={{ textAlign:"center" }}>🌱 {t("register.planFreeName")}</th>
+                        <th className="col-plan" style={{ textAlign:"center" }}>⭐ {t("register.planPremiumName")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -501,7 +479,7 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
                               <tr key={i}>
                                 <td className="feat-col">
                                   {f[0]}
-                                  {f[4] && <span className={`feat-tag tag-${f[4]}`}>{f[4] === "new" ? "Nuevo" : f[4] === "pro" ? "Pro" : "Próximo"}</span>}
+                                  {f[4] && <span className={`feat-tag tag-${f[4]}`}>{tagLabel(f[4])}</span>}
                                 </td>
                                 <td className="val-col">
                                   {f[2] === true
@@ -533,11 +511,11 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
             {/* ── TRUST STRIP ── */}
             <div className="trust-strip">
               {[
-                ["🔒", "Datos cifrados"],
-                ["🚫", "Sin anuncios"],
-                ["💳", "Cancela cuando quieras"],
-                ["🇵🇪", "Hecho para Perú"],
-                ["⚡", "99.9% disponibilidad"],
+                ["🔒", t("plans.trustEncrypted")],
+                ["🚫", t("plans.trustNoAds")],
+                ["💳", t("plans.trustCancelAnytime")],
+                ["🌎", t("plans.trustBuiltFor")],
+                ["⚡", t("plans.trustUptime")],
               ].map(([ico, txt]) => (
                 <div className="trust-item" key={txt}>
                   <span className="trust-ico">{ico}</span>
@@ -548,7 +526,7 @@ export default function PlanesPage({ onNavigate, onLogout, isGuest = false, user
 
             {/* ── FAQ ── */}
             <div className="faq-wrap">
-              <div className="faq-title">Preguntas frecuentes</div>
+              <div className="faq-title">{t("plans.faqTitle")}</div>
               {FAQS.map((faq, i) => (
                 <div key={i} className={`faq-item${openFaq === i ? " open" : ""}`}>
                   <div className="faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>

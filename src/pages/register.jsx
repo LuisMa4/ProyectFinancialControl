@@ -92,7 +92,10 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
       setAuthData(response);
       setDone(true);
     } catch (error) {
-      setErrors({ form: error.message || t("register.errGeneric") });
+      const parsed = (() => {
+        try { return JSON.parse(error.message)?.error; } catch { return null; }
+      })();
+      setErrors({ form: parsed || t("register.errGeneric") });
     } finally {
       setLoading(false);
     }

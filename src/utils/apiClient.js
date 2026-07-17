@@ -1,4 +1,5 @@
 import { readAuthToken } from "./authToken";
+import { readStoredLanguage } from "./languageStorage";
 
 const API_BASE = typeof window !== "undefined" && window.finverde?.apiBase
   ? window.finverde.apiBase
@@ -11,6 +12,7 @@ export async function apiRequest(path, options = {}) {
     ...rest,
     headers: {
       "Content-Type": "application/json",
+      "X-App-Language": readStoredLanguage(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(extraHeaders || {}),
     },

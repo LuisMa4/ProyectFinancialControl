@@ -101,13 +101,29 @@ const json = (res, statusCode, payload) => {
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-App-Language",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
   });
   res.end(body);
 };
 
 const notFound = (res) => json(res, 404, { error: "Not found" });
+
+const ERRORS = {
+  missingRequiredFields: { es: "Faltan datos obligatorios", en: "Required fields are missing" },
+  emailAlreadyExists: { es: "Ya existe una cuenta con ese correo", en: "An account with that email already exists" },
+  missingCredentials: { es: "Faltan credenciales", en: "Missing credentials" },
+  invalidCredentials: { es: "Correo o contraseña incorrectos", en: "Incorrect email or password" },
+  notAuthenticated: { es: "No autenticado", en: "Not authenticated" },
+  invalidSession: { es: "Sesión inválida", en: "Invalid session" },
+  passwordMin: { es: "La contraseña nueva debe tener al menos 8 caracteres", en: "The new password must be at least 8 characters" },
+  wrongCurrentPassword: { es: "La contraseña actual no es correcta", en: "The current password is incorrect" },
+  noMessages: { es: "Sin mensajes", en: "No messages" },
+  internalError: { es: "Error interno del servidor", en: "Internal server error" },
+};
+
+const getRequestLanguage = (req) => (req.headers["x-app-language"] === "en" ? "en" : "es");
+const errMsg = (key, lang) => ERRORS[key][lang] || ERRORS[key].es;
 
 const readBody = async (req) => {
   const chunks = [];
@@ -554,7 +570,7 @@ const handleRequest = async (req, res) => {
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-App-Language",
       "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     });
     res.end();
@@ -579,11 +595,11 @@ const handleRequest = async (req, res) => {
     const rememberMe = Boolean(body?.rememberMe);
 
     if (!firstName || !lastName || !email || !password) {
-      return json(res, 400, { error: "Faltan datos obligatorios" });
+      return json(res, 400, { error: errMsg("missingRequiredFields", getRequestLanguage(req)) });
     }
 
     if (getUserByEmail(email)) {
-      return json(res, 409, { error: "Ya existe una cuenta con ese correo" });
+      return json(res, 409, { error: errMsg("emailAlreadyExists", getRequestLanguage(req)) });
     }
 
     const salt = createSalt();
@@ -612,18 +628,18 @@ const handleRequest = async (req, res) => {
     const rememberMe = Boolean(body?.rememberMe);
 
     if (!email || !password) {
-      return json(res, 400, { error: "Faltan credenciales" });
+      return json(res, 400, { error: errMsg("missingCredentials", getRequestLanguage(req)) });
     }
 
     const user = getUserByEmail(email);
     if (!user) {
-      return json(res, 401, { error: "Correo o contraseña incorrectos" });
+      return json(res, 401, { error: errMsg("invalidCredentials", getRequestLanguage(req)) });
     }
 
     const expected = user.password_hash || "";
     const candidate = user.password_salt ? hashPassword(password, user.password_salt) : hashValue(password);
     if (candidate !== expected) {
-      return json(res, 401, { error: "Correo o contraseña incorrectos" });
+      return json(res, 401, { error: errMsg("invalidCredentials", getRequestLanguage(req)) });
     }
 
     const token = createSession(user.id, rememberMe);
@@ -633,10 +649,10 @@ const handleRequest = async (req, res) => {
   if (url.pathname === "/api/auth/me" && req.method === "GET") {
     const authHeader = req.headers.authorization || "";
     const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    if (!token) return json(res, 401, { error: "No autenticado" });
+    if (!token) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
 
     const record = getUserByToken(token);
-    if (!record) return json(res, 401, { error: "Sesión inválida" });
+    if (!record) return json(res, 401, { error: errMsg("invalidSession", getRequestLanguage(req)) });
 
     return json(res, 200, { user: normalizeUserRow(record.user), session: record.session });
   }
@@ -652,7 +668,7 @@ const handleRequest = async (req, res) => {
 
   if (url.pathname === "/api/user" && req.method === "PUT") {
     const currentUser = getCurrentUserFromRequest(req);
-    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     const body = await readBody(req);
 
     const firstName = String(body?.firstName ?? currentUser.first_name).trim() || currentUser.first_name;
@@ -677,19 +693,19 @@ const handleRequest = async (req, res) => {
 
   if (url.pathname === "/api/auth/password" && req.method === "POST") {
     const currentUser = getCurrentUserFromRequest(req);
-    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     const body = await readBody(req);
     const currentPassword = String(body?.currentPassword || "");
     const newPassword = String(body?.newPassword || "");
 
     if (newPassword.length < 8) {
-      return json(res, 400, { error: "La contraseña nueva debe tener al menos 8 caracteres" });
+      return json(res, 400, { error: errMsg("passwordMin", getRequestLanguage(req)) });
     }
 
     const expected = currentUser.password_hash || "";
     const candidate = currentUser.password_salt ? hashPassword(currentPassword, currentUser.password_salt) : hashValue(currentPassword);
     if (candidate !== expected) {
-      return json(res, 401, { error: "La contraseña actual no es correcta" });
+      return json(res, 401, { error: errMsg("wrongCurrentPassword", getRequestLanguage(req)) });
     }
 
     const salt = createSalt();
@@ -705,7 +721,7 @@ const handleRequest = async (req, res) => {
 
   if (url.pathname === "/api/user/openai-key" && req.method === "PUT") {
     const currentUser = getCurrentUserFromRequest(req);
-    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     const body = await readBody(req);
     const apiKey = String(body?.apiKey || "").trim();
     db.prepare("UPDATE users SET openai_api_key = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
@@ -715,37 +731,37 @@ const handleRequest = async (req, res) => {
 
   if (url.pathname === "/api/cards") {
     const currentUser = getCurrentUserFromRequest(req);
-    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     if (req.method === "GET") return json(res, 200, getCards(currentUser.id));
     if (req.method === "PUT") return json(res, 200, replaceCards(currentUser.id, (await readBody(req))?.cards || []));
   }
 
   if (url.pathname === "/api/expenses") {
     const currentUser = getCurrentUserFromRequest(req);
-    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     if (req.method === "GET") return json(res, 200, getExpenses(currentUser.id));
     if (req.method === "PUT") return json(res, 200, replaceExpenses(currentUser.id, (await readBody(req))?.expenses || []));
   }
 
   if (url.pathname === "/api/goals" && req.method === "GET") {
     const currentUser = getCurrentUserFromRequest(req);
-    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     return json(res, 200, getGoals(currentUser.id));
   }
 
   if (url.pathname === "/api/goals" && req.method === "PUT") {
     const currentUser = getCurrentUserFromRequest(req);
-    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     return json(res, 200, replaceGoals(currentUser.id, (await readBody(req))?.goals || []));
   }
 
   if (url.pathname === "/api/chat" && req.method === "POST") {
     const currentUser = getCurrentUserFromRequest(req);
-    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     const body = await readBody(req);
     const messages = Array.isArray(body?.messages) ? body.messages : [];
     const language = body?.language === "en" ? "en" : "es";
-    if (!messages.length) return json(res, 400, { error: "Sin mensajes" });
+    if (!messages.length) return json(res, 400, { error: errMsg("noMessages", getRequestLanguage(req)) });
 
     const systemPrompt = buildFinancialContext(currentUser, language);
     const reply = await callOpenAI({ systemPrompt, messages, apiKey: currentUser.openai_api_key });
@@ -754,7 +770,7 @@ const handleRequest = async (req, res) => {
 
   if (url.pathname === "/api/events") {
     const currentUser = getCurrentUserFromRequest(req);
-    if (!currentUser) return json(res, 401, { error: "No autenticado" });
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     if (req.method === "GET") return json(res, 200, getEvents(currentUser.id));
     if (req.method === "PUT") return json(res, 200, replaceEvents(currentUser.id, (await readBody(req))?.events || []));
   }
@@ -768,7 +784,7 @@ const server = createServer(async (req, res) => {
   } catch (error) {
     console.error("API error:", error);
     if (!res.headersSent) {
-      json(res, 500, { error: "Error interno del servidor" });
+      json(res, 500, { error: errMsg("internalError", getRequestLanguage(req)) });
     }
   }
 });
