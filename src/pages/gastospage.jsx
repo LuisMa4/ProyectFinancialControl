@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Cell, LineChart, Line
@@ -7,46 +7,33 @@ import AppShell from "../components/AppShell";
 import { useI18n } from "../i18n/index.jsx";
 import {
   EXPENSES_CHANGED_EVENT,
+  EXPENSE_CATEGORIES,
   loadStoredExpenses,
   getInitialExpenses,
   writeStoredExpenses,
 } from "../utils/expensesStorage";
 
-/* -----------------------------------------
-   MOCK DATA
------------------------------------------ */
-const CATEGORIAS_DEF = [
-  { id:"alimentacion", name:"Alimentación",    icon:"🍔", color:"#7EC8C0", presupuesto:800  },
-  { id:"transporte",   name:"Transporte",       icon:"🚗", color:"#5AADA5", presupuesto:400  },
-  { id:"entrete",      name:"Entretenimiento",  icon:"🎬", color:"#A8DBD6", presupuesto:300  },
-  { id:"salud",        name:"Salud",            icon:"💊", color:"#C9A96E", presupuesto:250  },
-  { id:"educacion",    name:"Educación",        icon:"📚", color:"#8AADA9", presupuesto:200  },
-  { id:"servicios",    name:"Servicios",        icon:"⚡", color:"#4A706C", presupuesto:350  },
-  { id:"ropa",         name:"Ropa",             icon:"👗", color:"#D4B8A0", presupuesto:150  },
-  { id:"otros",        name:"Otros",            icon:"📦", color:"#DDE9E7", presupuesto:200  },
-];
-
-const GASTOS_INIT = [
-  { id:1,  desc:"Wong - Compras mensuales",   cat:"alimentacion", monto:185.50, fecha:"2025-05-24", nota:"Despensa completa",     recurrente:false },
-  { id:2,  desc:"Uber",                        cat:"transporte",   monto:18.90,  fecha:"2025-05-23", nota:"",                      recurrente:false },
-  { id:3,  desc:"Netflix",                     cat:"entrete",      monto:37.90,  fecha:"2025-05-23", nota:"Suscripción mensual",   recurrente:true  },
-  { id:4,  desc:"Farmacia Inkafarma",          cat:"salud",        monto:62.00,  fecha:"2025-05-22", nota:"Medicamentos",          recurrente:false },
-  { id:5,  desc:"Luz del Sur",                cat:"servicios",    monto:89.00,  fecha:"2025-05-21", nota:"Recibo mayo",           recurrente:true  },
-  { id:6,  desc:"Plaza Vea",                  cat:"alimentacion", monto:134.20, fecha:"2025-05-20", nota:"",                      recurrente:false },
-  { id:7,  desc:"Metropolitano",              cat:"transporte",   monto:50.00,  fecha:"2025-05-19", nota:"Recarga tarjeta",       recurrente:false },
-  { id:8,  desc:"Spotify",                    cat:"entrete",      monto:19.90,  fecha:"2025-05-18", nota:"",                      recurrente:true  },
-  { id:9,  desc:"Claro Internet",             cat:"servicios",    monto:89.00,  fecha:"2025-05-18", nota:"Plan Hogar",            recurrente:true  },
-  { id:10, desc:"Librería",                   cat:"educacion",    monto:45.00,  fecha:"2025-05-15", nota:"Cuadernos y útiles",    recurrente:false },
-  { id:11, desc:"Cineplanet",                 cat:"entrete",      monto:38.00,  fecha:"2025-05-14", nota:"Película + pop corn",   recurrente:false },
-  { id:12, desc:"KFC",                        cat:"alimentacion", monto:52.80,  fecha:"2025-05-13", nota:"Almuerzo familiar",     recurrente:false },
-  { id:13, desc:"Ripley - Camisas",           cat:"ropa",         monto:129.90, fecha:"2025-05-12", nota:"",                      recurrente:false },
-  { id:14, desc:"Gimnasio",                   cat:"salud",        monto:80.00,  fecha:"2025-05-10", nota:"Mensualidad",           recurrente:true  },
-  { id:15, desc:"Taxi",                       cat:"transporte",   monto:25.00,  fecha:"2025-05-09", nota:"",                      recurrente:false },
-  { id:16, desc:"Dentista",                   cat:"salud",        monto:120.00, fecha:"2025-05-07", nota:"Limpieza dental",       recurrente:false },
-  { id:17, desc:"Curso Udemy",                cat:"educacion",    monto:39.90,  fecha:"2025-05-06", nota:"Python para finanzas",  recurrente:false },
-  { id:18, desc:"Agua Sedapal",              cat:"servicios",    monto:42.00,  fecha:"2025-05-05", nota:"",                      recurrente:true  },
-  { id:19, desc:"Zara",                       cat:"ropa",         monto:89.00,  fecha:"2025-05-03", nota:"",                      recurrente:false },
-  { id:20, desc:"Gas",                        cat:"otros",        monto:28.00,  fecha:"2025-05-02", nota:"Balón de gas",          recurrente:false },
+const buildGastosInit = (t) => [
+  { id:1,  desc:t("demoExpenses.item1desc"),  cat:"alimentacion", monto:185.50, fecha:"2025-05-24", nota:t("demoExpenses.item1note"), recurrente:false },
+  { id:2,  desc:"Uber",                        cat:"transporte",   monto:18.90,  fecha:"2025-05-23", nota:"",                         recurrente:false },
+  { id:3,  desc:"Netflix",                     cat:"entrete",      monto:37.90,  fecha:"2025-05-23", nota:t("demoExpenses.item3note"), recurrente:true  },
+  { id:4,  desc:t("demoExpenses.item4desc"),  cat:"salud",        monto:62.00,  fecha:"2025-05-22", nota:t("demoExpenses.item4note"), recurrente:false },
+  { id:5,  desc:"Luz del Sur",                 cat:"servicios",    monto:89.00,  fecha:"2025-05-21", nota:t("demoExpenses.item5note"), recurrente:true  },
+  { id:6,  desc:"Plaza Vea",                   cat:"alimentacion", monto:134.20, fecha:"2025-05-20", nota:"",                         recurrente:false },
+  { id:7,  desc:"Metropolitano",               cat:"transporte",   monto:50.00,  fecha:"2025-05-19", nota:t("demoExpenses.item7note"), recurrente:false },
+  { id:8,  desc:"Spotify",                     cat:"entrete",      monto:19.90,  fecha:"2025-05-18", nota:"",                         recurrente:true  },
+  { id:9,  desc:"Claro Internet",              cat:"servicios",    monto:89.00,  fecha:"2025-05-18", nota:t("demoExpenses.item9note"), recurrente:true  },
+  { id:10, desc:t("demoExpenses.item10desc"), cat:"educacion",    monto:45.00,  fecha:"2025-05-15", nota:t("demoExpenses.item10note"), recurrente:false },
+  { id:11, desc:"Cineplanet",                  cat:"entrete",      monto:38.00,  fecha:"2025-05-14", nota:t("demoExpenses.item11note"), recurrente:false },
+  { id:12, desc:"KFC",                         cat:"alimentacion", monto:52.80,  fecha:"2025-05-13", nota:t("demoExpenses.item12note"), recurrente:false },
+  { id:13, desc:t("demoExpenses.item13desc"), cat:"ropa",         monto:129.90, fecha:"2025-05-12", nota:"",                         recurrente:false },
+  { id:14, desc:t("demoExpenses.item14desc"), cat:"salud",        monto:80.00,  fecha:"2025-05-10", nota:t("demoExpenses.item14note"), recurrente:true  },
+  { id:15, desc:"Taxi",                        cat:"transporte",   monto:25.00,  fecha:"2025-05-09", nota:"",                         recurrente:false },
+  { id:16, desc:t("demoExpenses.item16desc"), cat:"salud",        monto:120.00, fecha:"2025-05-07", nota:t("demoExpenses.item16note"), recurrente:false },
+  { id:17, desc:t("demoExpenses.item17desc"), cat:"educacion",    monto:39.90,  fecha:"2025-05-06", nota:t("demoExpenses.item17note"), recurrente:false },
+  { id:18, desc:t("demoExpenses.item18desc"), cat:"servicios",    monto:42.00,  fecha:"2025-05-05", nota:"",                         recurrente:true  },
+  { id:19, desc:"Zara",                        cat:"ropa",         monto:89.00,  fecha:"2025-05-03", nota:"",                         recurrente:false },
+  { id:20, desc:"Gas",                         cat:"otros",        monto:28.00,  fecha:"2025-05-02", nota:t("demoExpenses.item20note"), recurrente:false },
 ];
 
 /* -----------------------------------------
@@ -272,20 +259,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 }
 `;
 
-const fmt = (n) => `S/ ${Number(n).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const fmtDate = (d) => new Date(d + "T12:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" });
-const getCurrentPeriod = () => {
+const fmt = (n, locale = "en-US") => `S/ ${Number(n).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmtDate = (d, locale) => new Date(d + "T12:00:00").toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
+const getCurrentPeriod = (locale) => {
   const now = new Date();
-  const month = now.toLocaleDateString("es-PE", { month: "long" });
+  const month = now.toLocaleDateString(locale, { month: "long" });
   const titleMonth = month.charAt(0).toUpperCase() + month.slice(1);
   return { month, label: `${titleMonth} ${now.getFullYear()}` };
 };
 
-const CustomTip = ({ active, payload, label }) => {
+const CustomTip = ({ active, payload, label, t }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: "#2D4A47", color: "white", borderRadius: 10, padding: "8px 12px", fontSize: 12 }}>
-      <div style={{ color: "#A8DBD6", marginBottom: 3 }}>Día {label}</div>
+      <div style={{ color: "#A8DBD6", marginBottom: 3 }}>{t("expenses.dayLabel", { day: label })}</div>
       <div>S/ {payload[0].value}</div>
     </div>
   );
@@ -297,7 +284,9 @@ const todayLocalISO = () => {
 };
 
 export default function GastosPage({ onLogout, onNavigate, isGuest = false, user = null }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const CATEGORIAS_DEF = useMemo(() => EXPENSE_CATEGORIES.map((c) => ({ ...c, name: t(c.nameKey) })), [t]);
+  const GASTOS_INIT = useMemo(() => buildGastosInit(t), [t]);
   const [gastos, setGastos]         = useState(() => getInitialExpenses(isGuest ? GASTOS_INIT : []));
   const [search, setSearch]         = useState("");
   const [catFilter, setCatFilter]   = useState("todas");
@@ -307,7 +296,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
   const [showModal, setShowModal]   = useState(false);
   const [toast, setToast]           = useState(null);
   const PER_PAGE = 8;
-  const currentPeriod = getCurrentPeriod();
+  const currentPeriod = getCurrentPeriod(locale);
 
   const handleNavClick = (id) => {
     if (onNavigate) onNavigate(id);
@@ -324,6 +313,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
 
   useEffect(() => {
     void loadStoredExpenses(isGuest ? GASTOS_INIT : []).then(setGastos);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuest]);
 
   const commitGastos = (updater) => {
@@ -341,6 +331,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
     };
     window.addEventListener(EXPENSES_CHANGED_EVENT, syncExpenses);
     return () => window.removeEventListener(EXPENSES_CHANGED_EVENT, syncExpenses);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuest]);
 
   // Derived
@@ -383,7 +374,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
   const catTotals = useMemo(() => CATEGORIAS_DEF.map(c => ({
     ...c,
     gastado: gastos.filter(g => g.cat === c.id).reduce((a, g) => a + g.monto, 0),
-  })).sort((a, b) => b.gastado - a.gastado), [gastos]);
+  })).sort((a, b) => b.gastado - a.gastado), [gastos, CATEGORIAS_DEF]);
 
   const openNew = () => {
     setForm({ desc: "", monto: "", cat: "alimentacion", fecha: todayLocalISO(), nota: "", recurrente: false });
@@ -399,15 +390,15 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
 
   const saveGasto = () => {
     if (!form.desc.trim() || !form.monto || isNaN(Number(form.monto))) {
-      showToast("Completa descripción y monto válido", true); return;
+      showToast(t("expenses.validationError"), true); return;
     }
     const entry = { ...form, monto: Number(form.monto) };
     if (editId) {
       commitGastos(prev => prev.map(g => g.id === editId ? { ...g, ...entry } : g));
-      showToast("Gasto actualizado ✓");
+      showToast(t("expenses.updated"));
     } else {
       commitGastos(prev => [{ id: Date.now(), ...entry }, ...prev]);
-      showToast("Gasto registrado ✓");
+      showToast(t("expenses.created"));
     }
     setShowModal(false);
     setPage(1);
@@ -415,7 +406,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
 
   const deleteGasto = (id) => {
     commitGastos(prev => prev.filter(g => g.id !== id));
-    showToast("Gasto eliminado");
+    showToast(t("expenses.deleted"));
   };
 
   const getCat = (id) => CATEGORIAS_DEF.find(c => c.id === id) || CATEGORIAS_DEF[7];
@@ -434,26 +425,26 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
             </div>
 
             <div className="form-group">
-              <label className="form-label">Descripción</label>
-              <input className="form-input" placeholder="Ej: Almuerzo en restaurante" value={form.desc}
+              <label className="form-label">{t("expenses.descriptionLabel")}</label>
+              <input className="form-input" placeholder={t("expenses.descPlaceholder")} value={form.desc}
                 onChange={e => setForm(p => ({ ...p, desc: e.target.value }))} />
             </div>
 
             <div className="form-grid-2">
               <div className="form-group">
-                <label className="form-label">Monto (S/)</label>
+                <label className="form-label">{t("expenses.amountLabel")}</label>
                 <input className="form-input" type="number" placeholder="0.00" value={form.monto}
                   onChange={e => setForm(p => ({ ...p, monto: e.target.value }))} />
               </div>
               <div className="form-group">
-                <label className="form-label">Fecha</label>
+                <label className="form-label">{t("expenses.dateLabel")}</label>
                 <input className="form-input" type="date" value={form.fecha}
                   onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} />
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Categoría</label>
+              <label className="form-label">{t("expenses.categoryLabel")}</label>
               <div className="cat-select-grid">
                 {CATEGORIAS_DEF.map(c => (
                   <button key={c.id} className={`cat-opt${form.cat === c.id ? " sel" : ""}`}
@@ -466,18 +457,18 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
             </div>
 
             <div className="form-group">
-              <label className="form-label">Nota <span style={{ fontWeight: 300, color: "var(--muted)" }}>(opcional)</span></label>
-              <input className="form-input" placeholder="Agrega un detalle..." value={form.nota}
+              <label className="form-label">{t("expenses.noteLabel")} <span style={{ fontWeight: 300, color: "var(--muted)" }}>({t("register.optional")})</span></label>
+              <input className="form-input" placeholder={t("expenses.notePlaceholder")} value={form.nota}
                 onChange={e => setForm(p => ({ ...p, nota: e.target.value }))} />
             </div>
 
             <label className="check-row" style={{ marginBottom: 0 }}>
               <input type="checkbox" checked={form.recurrente} onChange={e => setForm(p => ({ ...p, recurrente: e.target.checked }))} />
-              Gasto recurrente (se repite cada mes)
+              {t("expenses.recurringCheckbox")}
             </label>
 
             <div className="modal-foot">
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>
+              <button className="btn-cancel" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
               <button className="btn-save" onClick={saveGasto}>{editId ? t("expenses.saveChanges") : t("expenses.register")} →</button>
             </div>
           </div>
@@ -505,7 +496,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
               <div className="sum-card accent" style={{ animationDelay: "0s" }}>
                 <div className="sum-top">
                   <span className="sum-icon">💳</span>
-                  <span className="sum-badge badge-white">{Math.round((totalMes / presTotal) * 100)}% del ppto.</span>
+                  <span className="sum-badge badge-white">{t("expenses.budgetPct", { pct: Math.round((totalMes / presTotal) * 100) })}</span>
                 </div>
                 <div className="sum-val">{fmt(totalMes)}</div>
                 <div className="sum-lbl">{t("expenses.totalIn", { month: currentPeriod.month })}</div>
@@ -527,7 +518,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
               <div className="sum-card" style={{ animationDelay: ".12s" }}>
                 <div className="sum-top">
                   <span className="sum-icon">⬆️</span>
-                  <span className="sum-badge badge-red">Mayor</span>
+                  <span className="sum-badge badge-red">{t("expenses.highest")}</span>
                 </div>
                 <div className="sum-val">{fmt(mayorGasto?.monto || 0)}</div>
                 <div className="sum-lbl">{mayorGasto?.desc || "—"}</div>
@@ -536,7 +527,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
               <div className="sum-card" style={{ animationDelay: ".17s" }}>
                 <div className="sum-top">
                   <span className="sum-icon">📊</span>
-                  <span className="sum-badge badge-green">{gastos.length} registros</span>
+                  <span className="sum-badge badge-green">{gastos.length}</span>
                 </div>
                 <div className="sum-val">{fmt(gastos.length ? totalMes / gastos.length : 0)}</div>
                 <div className="sum-lbl">{t("expenses.avgPerOp")}</div>
@@ -556,8 +547,8 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                     </div>
                     <select className="filter-sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
                       <option value="fecha">{t("expenses.newest")}</option>
-                      <option value="monto">Mayor monto</option>
-                      <option value="desc">Alfabético</option>
+                      <option value="monto">{t("expenses.sortAmount")}</option>
+                      <option value="desc">{t("expenses.sortAlpha")}</option>
                     </select>
                   </div>
 
@@ -582,16 +573,16 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                   {paginated.length === 0 ? (
                     <div className="empty-state">
                       <div className="empty-icon">🔍</div>
-                      <div className="empty-txt">No se encontraron gastos con esos filtros.</div>
+                      <div className="empty-txt">{t("expenses.noneFound")}</div>
                     </div>
                   ) : (
                     <table className="tx-table">
                       <thead>
                         <tr>
-                          <th>Descripción</th>
-                          <th>Categoría</th>
-                          <th>Fecha</th>
-                          <th>Monto</th>
+                          <th>{t("expenses.descriptionLabel")}</th>
+                          <th>{t("expenses.categoryLabel")}</th>
+                          <th>{t("expenses.dateLabel")}</th>
+                          <th>{t("expenses.colAmount")}</th>
                           <th></th>
                         </tr>
                       </thead>
@@ -607,7 +598,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                                     <div className="tx-desc">{g.desc}</div>
                                     <div className="tx-nota">
                                       {g.nota && <span>{g.nota}</span>}
-                                      {g.recurrente && <span className="rec-badge" style={{ marginLeft: g.nota ? 6 : 0 }}>🔁 Recurrente</span>}
+                                      {g.recurrente && <span className="rec-badge" style={{ marginLeft: g.nota ? 6 : 0 }}>{t("expenses.recurrentBadge")}</span>}
                                     </div>
                                   </div>
                                 </div>
@@ -617,12 +608,12 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                                   {cat.name}
                                 </span>
                               </td>
-                              <td style={{ color: "var(--muted)", fontSize: 12, whiteSpace: "nowrap" }}>{fmtDate(g.fecha)}</td>
+                              <td style={{ color: "var(--muted)", fontSize: 12, whiteSpace: "nowrap" }}>{fmtDate(g.fecha, locale)}</td>
                               <td><span className="amount-cell">{fmt(g.monto)}</span></td>
                               <td onClick={e => e.stopPropagation()}>
                                 <div className="actions-cell">
-                                  <button className="act-btn" title="Editar" onClick={() => openEdit(g)}>✏️</button>
-                                  <button className="act-btn del" title="Eliminar" onClick={() => deleteGasto(g.id)}>🗑</button>
+                                  <button className="act-btn" title={t("common.edit")} onClick={() => openEdit(g)}>✏️</button>
+                                  <button className="act-btn del" title={t("common.delete")} onClick={() => deleteGasto(g.id)}>🗑</button>
                                 </div>
                               </td>
                             </tr>
@@ -635,7 +626,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                   {/* PAGINATION */}
                   {totalPages > 1 && (
                     <div className="pagination">
-                      <span>Mostrando {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} de {filtered.length}</span>
+                      <span>{t("expenses.showing", { from: Math.min((page - 1) * PER_PAGE + 1, filtered.length), to: Math.min(page * PER_PAGE, filtered.length), total: filtered.length })}</span>
                       <div className="page-btns">
                         <button className="page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹</button>
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
@@ -655,21 +646,21 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="card trend-card" style={{ animationDelay: ".28s" }}>
                   <div className="card-hd">
                     <div>
-                      <div className="card-title">Tendencia</div>
-                      <div className="card-sub">Gastos diarios {currentPeriod.month}</div>
+                      <div className="card-title">{t("expenses.trend")}</div>
+                      <div className="card-sub">{t("expenses.dailyIn", { month: currentPeriod.month })}</div>
                     </div>
                   </div>
                   {trendData.length === 0 ? (
                     <div className="empty-state" style={{ padding: "24px 0" }}>
                       <div className="empty-icon">🔍</div>
-                      <div className="empty-txt">Aún no hay gastos para mostrar tendencia.</div>
+                      <div className="empty-txt">{t("expenses.noTrend")}</div>
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height={110}>
                       <LineChart data={trendData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
                         <XAxis dataKey="dia" tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
-                        <Tooltip content={<CustomTip />} />
+                        <Tooltip content={<CustomTip t={t} />} />
                         <Line type="monotone" dataKey="monto" stroke="#5AADA5" strokeWidth={2.5}
                           dot={false} activeDot={{ r: 4, fill: "#5AADA5" }} />
                       </LineChart>
@@ -681,8 +672,8 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="card" style={{ animationDelay: ".34s" }}>
                   <div className="card-hd">
                     <div>
-                      <div className="card-title">Por Categoría</div>
-                      <div className="card-sub">vs presupuesto</div>
+                      <div className="card-title">{t("expenses.byCategory")}</div>
+                      <div className="card-sub">{t("expenses.vsBudget")}</div>
                     </div>
                   </div>
                   <div className="cat-bars">
@@ -704,7 +695,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                             <div className="cat-fill" style={{ width: `${pct}%`, background: over ? "var(--red)" : c.color }} />
                           </div>
                           <div className="cat-pct" style={{ color: over ? "var(--red)" : "var(--muted)" }}>
-                            {over ? `⚠ +${fmt(c.gastado - c.presupuesto)} sobre el límite` : `${Math.round(pct)}% de S/ ${c.presupuesto}`}
+                            {over ? t("expenses.overLimit", { amount: fmt(c.gastado - c.presupuesto) }) : t("expenses.pctOfBudget", { pct: Math.round(pct), budget: `S/ ${c.presupuesto}` })}
                           </div>
                         </div>
                       );
@@ -716,8 +707,8 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="card" style={{ animationDelay: ".4s" }}>
                   <div className="card-hd">
                     <div>
-                      <div className="card-title">Top gastos</div>
-                      <div className="card-sub">Comparativa por categoría</div>
+                      <div className="card-title">{t("expenses.topExpenses")}</div>
+                      <div className="card-sub">{t("expenses.categoryCompare")}</div>
                     </div>
                   </div>
                   <ResponsiveContainer width="100%" height={160}>
@@ -742,5 +733,3 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
     </>
   );
 }
-
-

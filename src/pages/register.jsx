@@ -2,11 +2,10 @@ import { useState } from "react";
 import { registerAccount, writeAuthToken } from "../utils/authStorage";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n/index.jsx";
+import saviaIcon from "../assets/savia_icon_final.png";
 import "./register.css";
 
-const STEPS = ["Cuenta", "Perfil", "Plan"];
-
-function getStrength(pw) {
+function getStrength(pw, t) {
   if (!pw) return { level: 0, label: "", color: "" };
   let score = 0;
   if (pw.length >= 8) score++;
@@ -14,11 +13,11 @@ function getStrength(pw) {
   if (/[0-9]/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   const map = [
-    { label: "Muy débil", color: "#E07070" },
-    { label: "Débil",     color: "#E0A870" },
-    { label: "Regular",   color: "#E0D070" },
-    { label: "Buena",     color: "#7EC8C0" },
-    { label: "Fuerte",    color: "#5AADA5" },
+    { label: t("register.strengthVeryWeak"), color: "#E07070" },
+    { label: t("register.strengthWeak"),     color: "#E0A870" },
+    { label: t("register.strengthFair"),     color: "#E0D070" },
+    { label: t("register.strengthGood"),     color: "#7EC8C0" },
+    { label: t("register.strengthStrong"),   color: "#5AADA5" },
   ];
   return { level: score, ...map[score] };
 }
@@ -30,14 +29,14 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
   const [done, setDone] = useState(false);
   const [authData, setAuthData] = useState(null);
 
-  // Step 0 — Cuenta
+  // Step 0 — Account
   const [email, setEmail]       = useState("");
   const [password, setPw]       = useState("");
   const [confirm, setConfirm]   = useState("");
   const [showPw, setShowPw]     = useState(false);
   const [showCf, setShowCf]     = useState(false);
 
-  // Step 1 — Perfil
+  // Step 1 — Profile
   const [firstName, setFirst]   = useState("");
   const [lastName,  setLast]    = useState("");
   const [phone,     setPhone]   = useState("");
@@ -49,25 +48,26 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
 
   const [errors, setErrors] = useState({});
 
-  const strength = getStrength(password);
+  const STEPS = [t("register.stepAccount"), t("register.stepProfile"), t("register.stepPlan")];
+  const strength = getStrength(password, t);
 
   const validateStep = () => {
     const e = {};
     if (step === 0) {
-      if (!email.trim()) e.email = "El correo es requerido";
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Correo inválido";
-      if (!password) e.password = "La contraseña es requerida";
-      else if (password.length < 8) e.password = "Mínimo 8 caracteres";
-      if (!confirm) e.confirm = "Confirma tu contraseña";
-      else if (confirm !== password) e.confirm = "Las contraseñas no coinciden";
+      if (!email.trim()) e.email = t("register.errEmailRequired");
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = t("register.errEmailInvalid");
+      if (!password) e.password = t("register.errPasswordRequired");
+      else if (password.length < 8) e.password = t("register.errPasswordMin");
+      if (!confirm) e.confirm = t("register.errConfirmRequired");
+      else if (confirm !== password) e.confirm = t("register.errConfirmMismatch");
     }
     if (step === 1) {
-      if (!firstName.trim()) e.firstName = "Nombre requerido";
-      if (!lastName.trim())  e.lastName  = "Apellido requerido";
-      if (phone && !/^\d{9}$/.test(phone)) e.phone = "Teléfono debe tener exactamente 9 dígitos";
+      if (!firstName.trim()) e.firstName = t("register.errFirstNameRequired");
+      if (!lastName.trim())  e.lastName  = t("register.errLastNameRequired");
+      if (phone && !/^\d{9}$/.test(phone)) e.phone = t("register.errPhoneInvalid");
     }
     if (step === 2) {
-      if (!terms) e.terms = "Debes aceptar los términos";
+      if (!terms) e.terms = t("register.errTermsRequired");
     }
     return e;
   };
@@ -92,7 +92,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
       setAuthData(response);
       setDone(true);
     } catch (error) {
-      setErrors({ form: error.message || "No se pudo crear la cuenta" });
+      setErrors({ form: error.message || t("register.errGeneric") });
     } finally {
       setLoading(false);
     }
@@ -112,12 +112,11 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
           <div className="right-panel">
             <div className="success-screen">
               <div className="success-icon">✓</div>
-              <h2 className="success-title">¡Cuenta creada!</h2>
+              <h2 className="success-title">{t("register.successTitle")}</h2>
               <p className="success-sub">
-                Bienvenido a <strong>Savia</strong>. Tu cuenta ha sido registrada exitosamente.
-                Ahora puedes comenzar a gestionar tus finanzas personales.
+                {t("register.successSubPre")} <strong>Savia</strong>. {t("register.successSubPost")}
               </p>
-              <button className="btn-go" onClick={() => onRegisterSuccess(authData?.user, authData?.token)}>Ir al panel principal →</button>
+              <button className="btn-go" onClick={() => onRegisterSuccess(authData?.user, authData?.token)}>{t("register.goToPanel")} →</button>
             </div>
           </div>
         </div>
@@ -140,16 +139,16 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
             <LanguageSwitcher />
           </div>
           <div className="form-header">
-            <p className="form-eyebrow">Paso {step + 1} de 3</p>
+            <p className="form-eyebrow">{t("register.stepOf", { step: step + 1 })}</p>
             <h2 className="form-title">
               {step === 0 && t("register.title")}
-              {step === 1 && "Tu perfil"}
-              {step === 2 && "Elige tu plan"}
+              {step === 1 && t("register.step1Title")}
+              {step === 2 && t("register.step2Title")}
             </h2>
             <p className="form-subtitle">
-              {step === 0 && "Ingresa tus credenciales de acceso"}
-              {step === 1 && "Personaliza tu experiencia en Savia"}
-              {step === 2 && "Selecciona el plan que mejor se adapte a ti"}
+              {step === 0 && t("register.step0Sub")}
+              {step === 1 && t("register.step1Sub")}
+              {step === 2 && t("register.step2Sub")}
             </p>
           </div>
           {errors.form && <div className="error-msg" style={{marginTop:12}}>⚠ {errors.form}</div>}
@@ -169,7 +168,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
             ))}
           </div>
 
-          {/* ── STEP 0: Cuenta ── */}
+          {/* ── STEP 0: Account ── */}
           {step === 0 && (
             <>
               <div className="form-group">
@@ -179,7 +178,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                   <input
                     type="email"
                     className={`form-input${errors.email ? " error" : email && !errors.email ? " valid" : ""}`}
-                    placeholder="tu@correo.com"
+                    placeholder={t("login.emailPlaceholder")}
                     value={email}
                     onChange={e => { setEmail(e.target.value); clearErr("email"); }}
                   />
@@ -194,7 +193,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                   <input
                     type={showPw ? "text" : "password"}
                     className={`form-input${errors.password ? " error" : ""}`}
-                    placeholder="Mínimo 8 caracteres"
+                    placeholder={t("register.passwordPlaceholder")}
                     value={password}
                     onChange={e => { setPw(e.target.value); clearErr("password"); }}
                   />
@@ -220,7 +219,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                   <input
                     type={showCf ? "text" : "password"}
                     className={`form-input${errors.confirm ? " error" : confirm && confirm === password ? " valid" : ""}`}
-                    placeholder="Repite tu contraseña"
+                    placeholder={t("register.confirmPlaceholder")}
                     value={confirm}
                     onChange={e => { setConfirm(e.target.value); clearErr("confirm"); }}
                   />
@@ -233,7 +232,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
             </>
           )}
 
-          {/* ── STEP 1: Perfil ── */}
+          {/* ── STEP 1: Profile ── */}
           {step === 1 && (
             <>
               <div className="form-grid">
@@ -244,7 +243,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                     <input
                       type="text"
                       className={`form-input${errors.firstName ? " error" : ""}`}
-                      placeholder="Juan"
+                      placeholder={t("register.firstNamePlaceholder")}
                       value={firstName}
                       onChange={e => { setFirst(e.target.value); clearErr("firstName"); }}
                     />
@@ -259,7 +258,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                     <input
                       type="text"
                       className={`form-input${errors.lastName ? " error" : ""}`}
-                      placeholder="Pérez"
+                      placeholder={t("register.lastNamePlaceholder")}
                       value={lastName}
                       onChange={e => { setLast(e.target.value); clearErr("lastName"); }}
                     />
@@ -268,7 +267,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                 </div>
 
                 <div className="form-group full">
-                  <label className="form-label">Teléfono <span style={{color:"var(--text-muted)",fontWeight:300}}>(opcional)</span></label>
+                  <label className="form-label">{t("register.phone")} <span style={{color:"var(--text-muted)",fontWeight:300}}>({t("register.optional")})</span></label>
                   <div className="input-wrap">
                     <span className="input-icon">📱</span>
                     <input
@@ -277,10 +276,10 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                       placeholder="999999999"
                       maxLength="9"
                       value={phone}
-                      onChange={e => { 
+                      onChange={e => {
                         const val = e.target.value.replace(/\D/g, '').slice(0, 9);
-                        setPhone(val); 
-                        clearErr("phone"); 
+                        setPhone(val);
+                        clearErr("phone");
                       }}
                     />
                   </div>
@@ -288,7 +287,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                 </div>
 
                 <div className="form-group full">
-                  <label className="form-label">Moneda principal</label>
+                  <label className="form-label">{t("register.currencyLabel")}</label>
                   <div className="input-wrap">
                     <span className="input-icon">💱</span>
                     <select
@@ -296,12 +295,12 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                       value={currency}
                       onChange={e => setCurrency(e.target.value)}
                     >
-                      <option value="PEN">🇵🇪 Sol Peruano (S/)</option>
-                      <option value="USD">🇺🇸 Dólar Americano ($)</option>
-                      <option value="EUR">🇪🇺 Euro (€)</option>
-                      <option value="COP">🇨🇴 Peso Colombiano</option>
-                      <option value="MXN">🇲🇽 Peso Mexicano</option>
-                      <option value="CLP">🇨🇱 Peso Chileno</option>
+                      <option value="PEN">🇵🇪 {t("register.currencyPEN")}</option>
+                      <option value="USD">🇺🇸 {t("register.currencyUSD")}</option>
+                      <option value="EUR">🇪🇺 {t("register.currencyEUR")}</option>
+                      <option value="COP">🇨🇴 {t("register.currencyCOP")}</option>
+                      <option value="MXN">🇲🇽 {t("register.currencyMXN")}</option>
+                      <option value="CLP">🇨🇱 {t("register.currencyCLP")}</option>
                     </select>
                   </div>
                 </div>
@@ -314,8 +313,8 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
             <>
               <div className="plan-grid">
                 {[
-                  { id: "free", icon: "🌱", name: "Plan Gratuito", price: "Gratis para siempre", badge: null },
-                  { id: "premium", icon: "⭐", name: "Plan Premium", price: "S/ 19.90 / mes", badge: "Popular" },
+                  { id: "free", icon: "🌱", name: t("register.planFreeName"), price: t("register.planFreePrice"), badge: null },
+                  { id: "premium", icon: "⭐", name: t("register.planPremiumName"), price: t("register.planPremiumPrice"), badge: t("register.planPopular") },
                 ].map(p => (
                   <div
                     key={p.id}
@@ -334,12 +333,12 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
               {/* Features comparison mini */}
               <div style={{background:"var(--mint)",borderRadius:12,padding:"16px 20px",marginBottom:20,fontSize:13}}>
                 {[
-                  ["Registro de gastos", true, true],
-                  ["Dashboard e historial básico", true, true],
-                  ["Historial extendido (12+ meses)", false, true],
-                  ["Chatbot financiero con IA", false, true],
-                  ["Metas de ahorro ilimitadas", false, true],
-                  ["Alertas y recordatorios avanzados", false, true],
+                  [t("register.featExpenseLog"), true, true],
+                  [t("register.featBasicDashboard"), true, true],
+                  [t("register.featExtendedHistory"), false, true],
+                  [t("register.featAiChatbot"), false, true],
+                  [t("register.featUnlimitedGoals"), false, true],
+                  [t("register.featAdvancedAlerts"), false, true],
                 ].map(([feat, free, prem], i) => (
                   <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0",borderBottom: i < 5 ? "1px solid #DDE9E7" : "none"}}>
                     <span style={{color:"var(--slate-mid)"}}>{feat}</span>
@@ -358,8 +357,8 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
                   onChange={e => { setTerms(e.target.checked); clearErr("terms"); }}
                 />
                 <label htmlFor="terms" className="terms-text">
-                  He leído y acepto los <a href="#" className="terms-link">Términos de servicio</a> y la{" "}
-                  <a href="#" className="terms-link">Política de privacidad</a> de Savia.
+                  {t("register.termsPre")} <a href="#" className="terms-link">{t("register.termsOfService")}</a> {t("register.termsAnd")}{" "}
+                  <a href="#" className="terms-link">{t("register.privacyPolicy")}</a> {t("register.termsPost")}
                 </label>
               </div>
               {errors.terms && <div className="error-msg" style={{marginBottom:12}}>⚠ {errors.terms}</div>}
@@ -370,7 +369,7 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
           <div className="btn-row">
             {step > 0 && (
               <button className="btn-back" onClick={() => { setStep(s => s - 1); setErrors({}); }}>
-                ← Atrás
+                ← {t("common.back")}
               </button>
             )}
             <button className="btn-next" onClick={handleNext} disabled={loading}>
@@ -380,8 +379,8 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
           </div>
 
           <p className="login-line">
-            ¿Ya tienes cuenta?{" "}
-            <a onClick={onLogin} className="login-link">Inicia sesión</a>
+            {t("register.hasAccount")}{" "}
+            <a onClick={onLogin} className="login-link">{t("register.login")}</a>
           </p>
           </div>
         </div>
@@ -391,33 +390,35 @@ export default function RegisterPage({ onLogin, onRegisterSuccess }) {
 }
 
 function LeftContent() {
+  const { t } = useI18n();
+
+  const benefits = [
+    { icon: "📊", title: t("register.benefitDashboardTitle"), desc: t("register.benefitDashboardDesc") },
+    { icon: "🎯", title: t("register.benefitGoalsTitle"), desc: t("register.benefitGoalsDesc") },
+    { icon: "🤖", title: t("register.benefitChatbotTitle"), desc: t("register.benefitChatbotDesc") },
+    { icon: "🔔", title: t("register.benefitAlertsTitle"), desc: t("register.benefitAlertsDesc") },
+  ];
+
   return (
     <>
       <div className="brand">
-        <div className="brand-icon">💎</div>
+        <img className="brand-icon" src={saviaIcon} alt="Savia" />
         <span className="brand-name">Savia</span>
       </div>
 
       <div className="hero-content">
         <div className="hero-tag">
           <div className="hero-tag-dot" />
-          Registro gratuito
+          {t("register.freeSignup")}
         </div>
         <h1 className="hero-title">
-          Empieza hoy tu<br /><em>camino</em><br />financiero.
+          {t("register.heroTitle1")}<br /><em>{t("register.heroTitle2")}</em><br />{t("register.heroTitle3")}
         </h1>
-        <p className="hero-sub">
-          Únete a Savia y toma el control de tus gastos, metas de ahorro y finanzas personales desde el primer día.
-        </p>
+        <p className="hero-sub">{t("register.heroSub")}</p>
       </div>
 
       <div className="benefits">
-        {[
-          { icon: "📊", title: "Dashboard en tiempo real", desc: "Visualiza tus gastos con gráficos claros" },
-          { icon: "🎯", title: "Metas de ahorro", desc: "Define y alcanza tus objetivos financieros" },
-          { icon: "🤖", title: "Chatbot con IA", desc: "Consejos personalizados para tu dinero" },
-          { icon: "🔔", title: "Alertas inteligentes", desc: "Nunca superes tu presupuesto de nuevo" },
-        ].map((b, i) => (
+        {benefits.map((b, i) => (
           <div className="benefit" key={i}>
             <div className="benefit-icon">{b.icon}</div>
             <div className="benefit-text">
@@ -428,7 +429,7 @@ function LeftContent() {
         ))}
       </div>
 
-      <div className="left-footer">© 2025 Savia · Todos los derechos reservados</div>
+      <div className="left-footer">{t("register.footer")}</div>
     </>
   );
 }

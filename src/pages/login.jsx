@@ -2,6 +2,7 @@ import { useState } from "react";
 import { loginAccount, writeAuthToken } from "../utils/authStorage";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { useI18n } from "../i18n/index.jsx";
+import saviaIcon from "../assets/savia_icon_final.png";
 import "./login.css";
 
 const parseApiError = (message) => {
@@ -17,6 +18,7 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState(null);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const validate = () => {
     const errs = {};
@@ -51,6 +53,24 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
     }
   };
 
+  const handleDemoLogin = async () => {
+    setErrors({});
+    setDemoLoading(true);
+    try {
+      const response = await loginAccount({ email: "juan.perez@gmail.com", password: "Savia123!", rememberMe: false });
+      writeAuthToken(response.token);
+      setToast(t("login.demoWelcome"));
+      setTimeout(() => {
+        setToast(null);
+        onLoginSuccess(response.user, response.token);
+      }, 700);
+    } catch {
+      setErrors({ form: t("login.demoError") });
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   const handleChange = (field) => (e) => {
     if (field === "email") setEmail(e.target.value);
     else setPassword(e.target.value);
@@ -67,38 +87,36 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
       <div className="page login-page">
         <div className="left-panel">
           <div className="brand">
-            <div className="brand-icon">💎</div>
+            <img className="brand-icon" src={saviaIcon} alt="Savia" />
             <span className="brand-name">Savia</span>
           </div>
 
           <div className="hero-content">
             <div className="hero-tag">
               <div className="hero-tag-dot" />
-              Sistema Financiero Personal
+              {t("login.heroTag")}
             </div>
             <h1 className="hero-title">
-              Controla tu<br />
-              <em>dinero,</em>
+              {t("login.heroTitle1")}<br />
+              <em>{t("login.heroTitle2")}</em>
               <br />
-              transforma tu vida.
+              {t("login.heroTitle3")}
             </h1>
-            <p className="hero-sub">
-              Registra gastos, define metas de ahorro y recibe consejos inteligentes para mejorar tu salud financiera.
-            </p>
+            <p className="hero-sub">{t("login.heroSub")}</p>
           </div>
 
           <div className="stats-row">
             <div className="stat">
               <span className="stat-num">32+</span>
-              <span className="stat-label">Funcionalidades</span>
+              <span className="stat-label">{t("login.statFeatures")}</span>
             </div>
             <div className="stat">
               <span className="stat-num">100%</span>
-              <span className="stat-label">Seguro</span>
+              <span className="stat-label">{t("login.statSecure")}</span>
             </div>
             <div className="stat">
               <span className="stat-num">24/7</span>
-              <span className="stat-label">Disponible</span>
+              <span className="stat-label">{t("login.statAvailable")}</span>
             </div>
           </div>
         </div>
@@ -123,7 +141,7 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
                     id="email"
                     type="email"
                     className={`form-input${errors.email ? " error" : ""}`}
-                    placeholder="tu@correo.com"
+                    placeholder={t("login.emailPlaceholder")}
                     value={email}
                     onChange={handleChange("email")}
                     autoComplete="email"
@@ -149,7 +167,7 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
                     type="button"
                     className="toggle-pass"
                     onClick={() => setShowPass((value) => !value)}
-                    aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    aria-label={showPass ? t("login.hidePassword") : t("login.showPassword")}
                   >
                     {showPass ? "🙈" : "👁"}
                   </button>
@@ -180,6 +198,12 @@ export default function LoginPage({ onRegister, onLoginSuccess }) {
                 {t("login.noAccount")}{" "}
                 <a onClick={onRegister} className="signup-link">{t("login.register")}</a>
               </p>
+
+              <div className="demo-divider"><span>{t("login.or")}</span></div>
+
+              <button type="button" className="btn-demo" onClick={handleDemoLogin} disabled={demoLoading || loading}>
+                {demoLoading ? t("login.submitting") : t("login.continueDemo")}
+              </button>
             </form>
           </div>
         </div>

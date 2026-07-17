@@ -2,7 +2,7 @@
   "name": "financialcontrol",
   "version": "1.0.0",
   "private": true,
-  "description": "Savia — Control financiero personal (gastos, metas, calendario y asistente IA)",
+  "description": "Savia — Personal finance control (expenses, goals, calendar and AI assistant)",
   "license": "ISC",
   "author": "LM",
   "type": "module",
@@ -40,7 +40,8 @@
   },
   "build": {
     "appId": "com.savia.financialcontrol",
-    "productName": "Savia Control Financiero",
+    "productName": "Savia",
+    "icon": "src/assets/savia_icon_final.png",
     "directories": {
       "output": "release"
     },
@@ -55,7 +56,8 @@
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "icon": "src/assets/savia_icon_final.png"
     },
     "nsis": {
       "oneClick": true,

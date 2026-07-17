@@ -5,70 +5,73 @@ import { useI18n } from "../i18n/index.jsx";
 import { loadStoredGoals, writeStoredGoals } from "../utils/goalsStorage";
 
 /* ─────────────────────────────────────────
-   DATA
+   DATA (demo, cuenta invitado)
 ───────────────────────────────────────── */
-const METAS_INIT = [
-  {
-    id: 1, nombre: "Viaje a Europa", icon: "✈️", color: "#7EC8C0",
-    meta: 8000, actual: 3200, aporteMensual: 400,
-    fechaLimite: "2025-12-31", prioridad: "alta",
-    descripcion: "Recorrer España, Francia e Italia por 3 semanas.",
-    historial: [
-      { mes: "Ene", aporte: 400 }, { mes: "Feb", aporte: 400 },
-      { mes: "Mar", aporte: 500 }, { mes: "Abr", aporte: 400 },
-      { mes: "May", aporte: 400 },
-    ],
-  },
-  {
-    id: 2, nombre: "Fondo de emergencia", icon: "🛡️", color: "#5AADA5",
-    meta: 5000, actual: 4100, aporteMensual: 300,
-    fechaLimite: "2025-07-31", prioridad: "alta",
-    descripcion: "Colchón equivalente a 3 meses de gastos fijos.",
-    historial: [
-      { mes: "Ene", aporte: 300 }, { mes: "Feb", aporte: 300 },
-      { mes: "Mar", aporte: 300 }, { mes: "Abr", aporte: 600 },
-      { mes: "May", aporte: 300 },
-    ],
-  },
-  {
-    id: 3, nombre: "Laptop nueva", icon: "💻", color: "#C9A96E",
-    meta: 3500, actual: 870, aporteMensual: 200,
-    fechaLimite: "2026-03-31", prioridad: "media",
-    descripcion: "MacBook Pro para trabajo y diseño.",
-    historial: [
-      { mes: "Ene", aporte: 150 }, { mes: "Feb", aporte: 200 },
-      { mes: "Mar", aporte: 200 }, { mes: "Abr", aporte: 120 },
-      { mes: "May", aporte: 200 },
-    ],
-  },
-  {
-    id: 4, nombre: "Auto propio", icon: "🚗", color: "#8AADA9",
-    meta: 20000, actual: 2500, aporteMensual: 500,
-    fechaLimite: "2027-06-30", prioridad: "baja",
-    descripcion: "Vehículo para independencia de movilidad.",
-    historial: [
-      { mes: "Ene", aporte: 500 }, { mes: "Feb", aporte: 500 },
-      { mes: "Mar", aporte: 500 }, { mes: "Abr", aporte: 500 },
-      { mes: "May", aporte: 500 },
-    ],
-  },
-  {
-    id: 5, nombre: "Curso de inglés", icon: "🎓", color: "#A8DBD6",
-    meta: 1200, actual: 1200, aporteMensual: 0,
-    fechaLimite: "2025-04-30", prioridad: "media",
-    descripcion: "Certificación Cambridge B2.",
-    historial: [
-      { mes: "Ene", aporte: 300 }, { mes: "Feb", aporte: 300 },
-      { mes: "Mar", aporte: 300 }, { mes: "Abr", aporte: 300 },
-    ],
-  },
-];
-
-const PRIORIDAD_CFG = {
-  alta:  { label: "Alta",  bg: "#FEF0F0", color: "#E07070" },
-  media: { label: "Media", bg: "#FFF8EC", color: "#C9A96E" },
-  baja:  { label: "Baja",  bg: "#EDF8F7", color: "#5AADA5" },
+const buildMetasInit = (t, lang) => {
+  const m = (i) => (lang === "en" ? ["Jan","Feb","Mar","Apr","May"][i] : ["Ene","Feb","Mar","Abr","May"][i]);
+  return [
+    {
+      id: 1, nombre: t("demoGoals.goal1Name"), icon: "✈️", color: "#7EC8C0",
+      meta: 8000, actual: 3200, aporteMensual: 400,
+      fechaLimite: "2025-12-31", prioridad: "alta",
+      descripcion: t("demoGoals.goal1Desc"),
+      historial: [
+        { mes: m(0), aporte: 400 }, { mes: m(1), aporte: 400 },
+        { mes: m(2), aporte: 500 }, { mes: m(3), aporte: 400 },
+        { mes: m(4), aporte: 400 },
+      ],
+    },
+    {
+      id: 2, nombre: t("demoGoals.goal2Name"), icon: "🛡️", color: "#5AADA5",
+      meta: 5000, actual: 4100, aporteMensual: 300,
+      fechaLimite: "2025-07-31", prioridad: "alta",
+      descripcion: t("demoGoals.goal2Desc"),
+      historial: [
+        { mes: m(0), aporte: 300 }, { mes: m(1), aporte: 300 },
+        { mes: m(2), aporte: 300 }, { mes: m(3), aporte: 600 },
+        { mes: m(4), aporte: 300 },
+      ],
+    },
+    {
+      id: 3, nombre: t("demoGoals.goal3Name"), icon: "💻", color: "#C9A96E",
+      meta: 3500, actual: 870, aporteMensual: 200,
+      fechaLimite: "2026-03-31", prioridad: "media",
+      descripcion: t("demoGoals.goal3Desc"),
+      historial: [
+        { mes: m(0), aporte: 150 }, { mes: m(1), aporte: 200 },
+        { mes: m(2), aporte: 200 }, { mes: m(3), aporte: 120 },
+        { mes: m(4), aporte: 200 },
+      ],
+    },
+    {
+      id: 4, nombre: t("demoGoals.goal4Name"), icon: "🚗", color: "#8AADA9",
+      meta: 20000, actual: 2500, aporteMensual: 500,
+      fechaLimite: "2027-06-30", prioridad: "baja",
+      descripcion: t("demoGoals.goal4Desc"),
+      historial: [
+        { mes: m(0), aporte: 500 }, { mes: m(1), aporte: 500 },
+        { mes: m(2), aporte: 500 }, { mes: m(3), aporte: 500 },
+        { mes: m(4), aporte: 500 },
+      ],
+    },
+    {
+      id: 5, nombre: t("demoGoals.goal5Name"), icon: "🎓", color: "#A8DBD6",
+      meta: 1200, actual: 1200, aporteMensual: 0,
+      fechaLimite: "2025-04-30", prioridad: "media",
+      descripcion: t("demoGoals.goal5Desc"),
+      historial: [
+        { mes: m(0), aporte: 300 }, { mes: m(1), aporte: 300 },
+        { mes: m(2), aporte: 300 }, { mes: m(3), aporte: 300 },
+      ],
+    },
+  ];
 };
+
+const buildPrioridadCfg = (t) => ({
+  alta:  { label: t("goals.priorityHigh"),   bg: "#FEF0F0", color: "#E07070" },
+  media: { label: t("goals.priorityMedium"), bg: "#FFF8EC", color: "#C9A96E" },
+  baja:  { label: t("goals.priorityLow"),    bg: "#EDF8F7", color: "#5AADA5" },
+});
 
 /* ─────────────────────────────────────────
    STYLES
@@ -283,7 +286,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 /* ─────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────── */
-const fmt = (n) => `S/ ${Number(n).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmt = (n, locale = "en-US") => `S/ ${Number(n).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const mesesRestantes = (fechaLimite) => {
   const hoy = new Date();
@@ -292,7 +295,7 @@ const mesesRestantes = (fechaLimite) => {
   return Math.max(0, diff);
 };
 
-const fmtFecha = (f) => new Date(f + "T12:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" });
+const fmtFecha = (f, locale = "en-US") => new Date(f + "T12:00:00").toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
 
 const makeShareLink = (id) => `${window.location.origin}${window.location.pathname}?metaCompartida=${id}`;
 
@@ -325,7 +328,9 @@ const MetaRing = ({ pct, color, size = 90 }) => {
    COMPONENT
 ───────────────────────────────────────── */
 export default function MetasPage({ onLogout, onNavigate, isGuest = false, user = null }) {
-  const { t } = useI18n();
+  const { t, lang, locale } = useI18n();
+  const METAS_INIT = useMemo(() => buildMetasInit(t, lang), [t, lang]);
+  const PRIORIDAD_CFG = useMemo(() => buildPrioridadCfg(t), [t]);
   const [metas, setMetas]         = useState(() => []);
   const [viewMode, setViewMode]   = useState("grid"); // grid | list
   const [filtro, setFiltro]       = useState("todas"); // todas | activas | completadas
@@ -352,14 +357,15 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
 
   useEffect(() => {
     void loadStoredGoals(isGuest ? METAS_INIT : []).then(setMetas);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuest]);
 
   const copyShareLink = async (link) => {
     try {
       await navigator.clipboard.writeText(link);
-      showToast("✓ Link copiado");
+      showToast(t("goals.linkCopied"));
     } catch {
-      showToast("Copia este link manualmente");
+      showToast(t("goals.copyManually"));
     }
   };
 
@@ -384,7 +390,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
   };
 
   const guardarMeta = () => {
-    if (!form.nombre.trim() || !form.meta || isNaN(+form.meta)) { showToast("⚠ Completa nombre y monto"); return; }
+    if (!form.nombre.trim() || !form.meta || isNaN(+form.meta)) { showToast(t("goals.validationError")); return; }
     const nextId = editMeta || Date.now();
     const entry = {
       ...form,
@@ -399,7 +405,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
       : [...metas, { id: nextId, ...entry, historial: [] }];
     setMetas(next);
     void writeStoredGoals(next);
-    showToast(editMeta ? "✓ Meta actualizada" : "✓ Meta creada");
+    showToast(editMeta ? t("goals.updated") : t("goals.created"));
     setModalNueva(false);
   };
 
@@ -407,21 +413,21 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
     const next = metas.filter(m => m.id !== id);
     setMetas(next);
     void writeStoredGoals(next);
-    showToast("✓ Meta eliminada");
+    showToast(t("goals.deleted"));
   };
 
   const hacerAbono = () => {
     const n = +montoAbono;
-    if (!n || n <= 0) { showToast("⚠ Ingresa un monto válido"); return; }
+    if (!n || n <= 0) { showToast(t("goals.invalidAmount")); return; }
     const hoy = new Date();
-    const mes = hoy.toLocaleDateString("es-PE", { month: "short" });
+    const mes = hoy.toLocaleDateString(locale, { month: "short" });
     const next = metas.map(m => m.id === modalAbonar
       ? { ...m, actual: Math.min(m.actual + n, m.meta * 1.5), historial: [...m.historial, { mes, aporte: n }] }
       : m
     );
     setMetas(next);
     void writeStoredGoals(next);
-    showToast(`✓ Abono de ${fmt(n)} registrado`);
+    showToast(t("goals.contributionRegistered", { amount: fmt(n, locale) }));
     setMontoAbono("");
     setModalAbonar(null);
   };
@@ -440,17 +446,17 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
         <div className="overlay" onClick={e => e.target === e.currentTarget && setModalNueva(false)}>
           <div className="modal">
             <div className="modal-hd">
-              <h2 className="modal-title">{editMeta ? "Editar meta" : "Nueva meta de ahorro"}</h2>
+              <h2 className="modal-title">{editMeta ? t("goals.editMeta") : t("goals.newMeta")}</h2>
               <button className="modal-close" onClick={() => setModalNueva(false)}>✕</button>
             </div>
 
             <div className="fg">
-              <label className="fl">Nombre de la meta</label>
-              <input className="fi" placeholder="Ej: Viaje a Japón" value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} />
+              <label className="fl">{t("goals.nameLabel")}</label>
+              <input className="fi" placeholder={t("goals.namePlaceholder")} value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} />
             </div>
 
             <div className="fg">
-              <label className="fl">Ícono</label>
+              <label className="fl">{t("goals.iconLabel")}</label>
               <div className="icon-grid">
                 {ICONS.map(ic => (
                   <button key={ic} className={`icon-opt${form.icon === ic ? " sel" : ""}`} onClick={() => setForm(p => ({ ...p, icon: ic }))}>{ic}</button>
@@ -459,7 +465,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
             </div>
 
             <div className="fg">
-              <label className="fl">Color</label>
+              <label className="fl">{t("goals.colorLabel")}</label>
               <div className="color-grid">
                 {COLORS.map(c => (
                   <div key={c} className={`color-opt${form.color === c ? " sel" : ""}`}
@@ -470,28 +476,28 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
 
             <div className="fg2">
               <div className="fg" style={{ marginBottom: 0 }}>
-                <label className="fl">Monto objetivo (S/)</label>
+                <label className="fl">{t("goals.targetAmountLabel")}</label>
                 <input className="fi" type="number" placeholder="0.00" value={form.meta} onChange={e => setForm(p => ({ ...p, meta: e.target.value }))} />
               </div>
               <div className="fg" style={{ marginBottom: 0 }}>
-                <label className="fl">Ya ahorré (S/)</label>
+                <label className="fl">{t("goals.alreadySavedLabel")}</label>
                 <input className="fi" type="number" placeholder="0.00" value={form.actual} onChange={e => setForm(p => ({ ...p, actual: e.target.value }))} />
               </div>
             </div>
 
             <div className="fg2" style={{ marginTop: 16 }}>
               <div className="fg" style={{ marginBottom: 0 }}>
-                <label className="fl">Aporte mensual (S/)</label>
+                <label className="fl">{t("goals.monthlyContribLabel")}</label>
                 <input className="fi" type="number" placeholder="0.00" value={form.aporteMensual} onChange={e => setForm(p => ({ ...p, aporteMensual: e.target.value }))} />
               </div>
               <div className="fg" style={{ marginBottom: 0 }}>
-                <label className="fl">Fecha límite</label>
+                <label className="fl">{t("goals.dueDateLabel")}</label>
                 <input className="fi" type="date" value={form.fechaLimite} onChange={e => setForm(p => ({ ...p, fechaLimite: e.target.value }))} />
               </div>
             </div>
 
             <div className="fg" style={{ marginTop: 16 }}>
-              <label className="fl">Prioridad</label>
+              <label className="fl">{t("goals.priorityLabel")}</label>
               <div className="prio-grid">
                 {Object.entries(PRIORIDAD_CFG).map(([k, v]) => (
                   <button key={k} className="prio-opt"
@@ -504,8 +510,8 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
             </div>
 
             <div className="fg" style={{ marginBottom: 0 }}>
-              <label className="fl">Descripción <span style={{ fontWeight: 300, color: "var(--muted)" }}>(opcional)</span></label>
-              <input className="fi" placeholder="¿Para qué es esta meta?" value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} />
+              <label className="fl">{t("goals.descriptionLabel")} <span style={{ fontWeight: 300, color: "var(--muted)" }}>({t("register.optional")})</span></label>
+              <input className="fi" placeholder={t("goals.descPlaceholder")} value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} />
             </div>
 
             <label className="share-toggle" style={{ marginTop: 16 }}>
@@ -515,19 +521,19 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
                 onChange={e => setForm(p => ({ ...p, compartida: e.target.checked, shareLink: e.target.checked ? p.shareLink : "" }))}
               />
               <div>
-                <div className="share-title">Meta compartida</div>
-                <div className="share-hint">Genera un link para compartir esta meta con amigos o familiares.</div>
+                <div className="share-title">{t("goals.sharedToggleTitle")}</div>
+                <div className="share-hint">{t("goals.sharedToggleHint")}</div>
                 {form.compartida && (
                   <div className="share-preview">
-                    {form.shareLink || "El link se generará al guardar la meta."}
+                    {form.shareLink || t("goals.linkGeneratedOnSave")}
                   </div>
                 )}
               </div>
             </label>
 
             <div className="mf">
-              <button className="btn-cancel" onClick={() => setModalNueva(false)}>Cancelar</button>
-              <button className="btn-save" onClick={guardarMeta}>{editMeta ? "Guardar cambios" : "Crear meta"} →</button>
+              <button className="btn-cancel" onClick={() => setModalNueva(false)}>{t("common.cancel")}</button>
+              <button className="btn-save" onClick={guardarMeta}>{editMeta ? t("goals.saveChanges") : t("goals.createGoal")} →</button>
             </div>
           </div>
         </div>
@@ -538,7 +544,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
         <div className="overlay" onClick={e => e.target === e.currentTarget && setModalAbonar(null)}>
           <div className="modal" style={{ maxWidth: 400 }}>
             <div className="modal-hd">
-              <h2 className="modal-title">Registrar abono</h2>
+              <h2 className="modal-title">{t("goals.registerContribution")}</h2>
               <button className="modal-close" onClick={() => setModalAbonar(null)}>✕</button>
             </div>
 
@@ -547,19 +553,19 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
               <div>
                 <div className="abono-name">{metaAbono.nombre}</div>
                 <div className="abono-pct">
-                  {fmt(metaAbono.actual)} de {fmt(metaAbono.meta)} · {Math.round((metaAbono.actual / metaAbono.meta) * 100)}% completado
+                  {fmt(metaAbono.actual, locale)} {t("goals.of")} {fmt(metaAbono.meta, locale)} · {t("goals.completedPct", { pct: Math.round((metaAbono.actual / metaAbono.meta) * 100) })}
                 </div>
               </div>
             </div>
 
             <div className="fg">
-              <label className="fl">Monto a abonar (S/)</label>
+              <label className="fl">{t("goals.contributionAmountLabel")}</label>
               <input className="fi" type="number" placeholder="0.00" value={montoAbono}
                 onChange={e => setMontoAbono(e.target.value)} autoFocus />
             </div>
 
             <div className="fg" style={{ marginBottom: 0 }}>
-              <label className="fl">Montos rápidos</label>
+              <label className="fl">{t("goals.quickAmountsLabel")}</label>
               <div className="quick-grid">
                 {[50, 100, 200, 500, metaAbono.aporteMensual].filter((v, i, a) => v > 0 && a.indexOf(v) === i).sort((a,b)=>a-b).map(v => (
                   <button key={v} className="quick-btn" onClick={() => setMontoAbono(String(v))}>S/ {v}</button>
@@ -568,8 +574,8 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
             </div>
 
             <div className="mf">
-              <button className="btn-cancel" onClick={() => setModalAbonar(null)}>Cancelar</button>
-              <button className="btn-save" onClick={hacerAbono}>Registrar abono →</button>
+              <button className="btn-cancel" onClick={() => setModalAbonar(null)}>{t("common.cancel")}</button>
+              <button className="btn-save" onClick={hacerAbono}>{t("goals.registerContributionCta")} →</button>
             </div>
           </div>
         </div>
@@ -592,12 +598,12 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
             {/* Stats */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
               {[
-                ["Ahorrado", fmt(metaDetalle.actual)],
-                ["Objetivo", fmt(metaDetalle.meta)],
-                ["Restante", fmt(Math.max(metaDetalle.meta - metaDetalle.actual, 0))],
-                ["Aporte mensual", fmt(metaDetalle.aporteMensual)],
-                ["Meses restantes", mesesRestantes(metaDetalle.fechaLimite) + " meses"],
-                ["Fecha límite", fmtFecha(metaDetalle.fechaLimite)],
+                [t("goals.saved"), fmt(metaDetalle.actual, locale)],
+                [t("goals.target"), fmt(metaDetalle.meta, locale)],
+                [t("goals.remaining"), fmt(Math.max(metaDetalle.meta - metaDetalle.actual, 0), locale)],
+                [t("goals.monthlyContrib"), fmt(metaDetalle.aporteMensual, locale)],
+                [t("goals.monthsRemaining"), t("goals.monthsSuffix", { n: mesesRestantes(metaDetalle.fechaLimite) })],
+                [t("goals.dueDate"), fmtFecha(metaDetalle.fechaLimite, locale)],
               ].map(([l, v]) => (
                 <div key={l} style={{ background: "var(--mint)", borderRadius: 10, padding: "10px 14px" }}>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>{l}</div>
@@ -608,20 +614,20 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
 
             {metaDetalle.compartida && (
               <div className="share-box">
-                <div className="share-box-title">🔗 Meta compartida</div>
-                <div className="share-box-text">Pasa este link a tus amigos o familiares para compartir esta meta.</div>
+                <div className="share-box-title">{t("goals.sharedGoalTitle")}</div>
+                <div className="share-box-text">{t("goals.shareBoxText")}</div>
                 <div className="share-link-row">
                   <div className="share-link">{metaDetalle.shareLink || makeShareLink(metaDetalle.id)}</div>
-                  <button className="share-copy" onClick={() => copyShareLink(metaDetalle.shareLink || makeShareLink(metaDetalle.id))}>Copiar</button>
+                  <button className="share-copy" onClick={() => copyShareLink(metaDetalle.shareLink || makeShareLink(metaDetalle.id))}>{t("goals.copy")}</button>
                 </div>
               </div>
             )}
 
             {/* Historial aportes */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--slate-m)", marginBottom: 10 }}>Historial de aportes</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--slate-m)", marginBottom: 10 }}>{t("goals.contributionHistory")}</div>
               {metaDetalle.historial.length === 0
-                ? <div style={{ fontSize: 13, color: "var(--muted)", textAlign: "center", padding: "12px 0" }}>Sin aportes registrados aún.</div>
+                ? <div style={{ fontSize: 13, color: "var(--muted)", textAlign: "center", padding: "12px 0" }}>{t("goals.noContributions")}</div>
                 : (
                   <div style={{ height: 120 }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -635,7 +641,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
                         <CartesianGrid strokeDasharray="3 3" stroke="#EEF5F4" />
                         <XAxis dataKey="mes" tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 10, fill: "#8AADA9" }} axisLine={false} tickLine={false} />
-                        <Tooltip formatter={v => [`S/ ${v}`, "Aporte"]} contentStyle={{ borderRadius: 8, fontSize: 12, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,.1)" }} />
+                        <Tooltip formatter={v => [`S/ ${v}`, t("goals.contributionAmountLabel")]} contentStyle={{ borderRadius: 8, fontSize: 12, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,.1)" }} />
                         <Area type="monotone" dataKey="aporte" stroke={metaDetalle.color} strokeWidth={2.5}
                           fill={`url(#grad-${metaDetalle.id})`} dot={false} activeDot={{ r: 4 }} />
                       </AreaChart>
@@ -646,8 +652,8 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn-cancel" style={{ flex: 1 }} onClick={() => { setModalDetalle(null); openEditar(metaDetalle); }}>✏️ Editar</button>
-              <button className="btn-save" style={{ flex: 2 }} onClick={() => { setModalDetalle(null); setModalAbonar(metaDetalle.id); }}>+ Abonar →</button>
+              <button className="btn-cancel" style={{ flex: 1 }} onClick={() => { setModalDetalle(null); openEditar(metaDetalle); }}>{t("goals.editCta")}</button>
+              <button className="btn-save" style={{ flex: 2 }} onClick={() => { setModalDetalle(null); setModalAbonar(metaDetalle.id); }}>{t("goals.contributeCta")}</button>
             </div>
           </div>
         </div>
@@ -685,34 +691,34 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
               <div className="kpi hl" style={{ animationDelay: "0s" }}>
                 <div className="kpi-top">
                   <span className="kpi-ico">🎯</span>
-                  <span className="kpi-badge b-wh">{metas.length} metas</span>
+                  <span className="kpi-badge b-wh">{t("trend.goalsCountMany", { count: metas.length })}</span>
                 </div>
-                <div className="kpi-val">{fmt(totalAhorrado)}</div>
-                <div className="kpi-lbl">Total ahorrado en metas</div>
+                <div className="kpi-val">{fmt(totalAhorrado, locale)}</div>
+                <div className="kpi-lbl">{t("goals.totalSavedInGoals")}</div>
               </div>
               <div className="kpi" style={{ animationDelay: ".07s" }}>
                 <div className="kpi-top">
                   <span className="kpi-ico">🏆</span>
-                  <span className="kpi-badge b-gr">{completadas} de {metas.length}</span>
+                  <span className="kpi-badge b-gr">{completadas} {t("goals.of")} {metas.length}</span>
                 </div>
                 <div className="kpi-val">{completadas}</div>
-                <div className="kpi-lbl">Metas completadas</div>
+                <div className="kpi-lbl">{t("goals.completedGoals")}</div>
               </div>
               <div className="kpi" style={{ animationDelay: ".12s" }}>
                 <div className="kpi-top">
                   <span className="kpi-ico">💸</span>
-                  <span className="kpi-badge b-go">Mensual</span>
+                  <span className="kpi-badge b-go">{t("goals.monthlyBadge")}</span>
                 </div>
-                <div className="kpi-val">{fmt(aporteTotal)}</div>
-                <div className="kpi-lbl">Aportes mensuales totales</div>
+                <div className="kpi-val">{fmt(aporteTotal, locale)}</div>
+                <div className="kpi-lbl">{t("goals.totalMonthlyContribs")}</div>
               </div>
               <div className="kpi" style={{ animationDelay: ".17s" }}>
                 <div className="kpi-top">
                   <span className="kpi-ico">📈</span>
                   <span className="kpi-badge b-mu">{progresoTotal}%</span>
                 </div>
-                <div className="kpi-val">{fmt(totalMeta - totalAhorrado)}</div>
-                <div className="kpi-lbl">Falta para completar todo</div>
+                <div className="kpi-val">{fmt(totalMeta - totalAhorrado, locale)}</div>
+                <div className="kpi-lbl">{t("goals.remainingToComplete")}</div>
               </div>
             </div>
 
@@ -720,7 +726,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
             {metasFiltradas.length === 0 ? (
               <div className="empty">
                 <div className="empty-ico">🎯</div>
-                <div className="empty-txt">No hay metas en esta categoría.</div>
+                <div className="empty-txt">{t("goals.noneInCategory")}</div>
               </div>
             ) : (
               <div className={`cards-grid${viewMode === "list" ? " list-view" : ""}`}>
@@ -733,7 +739,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
                     <div key={m.id} className={`meta-card${done ? " done-card" : ""}`}
                       style={{ animationDelay: `${.22 + idx * .06}s` }}
                       onClick={() => setModalDetalle(m.id)}>
-                      {m.compartida && <div className="shared-flag" title="Meta compartida">🔗</div>}
+                      {m.compartida && <div className="shared-flag" title={t("goals.sharedToggleTitle")}>🔗</div>}
 
                       <div className="mc-header">
                         <div className="mc-left">
@@ -744,9 +750,9 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
                           </div>
                         </div>
                         <div className="mc-right">
-                          {m.compartida && <span className="shared-badge">🔗 Compartida</span>}
+                          {m.compartida && <span className="shared-badge">{t("goals.sharedBadge")}</span>}
                           {done
-                            ? <span className="done-badge">✓ Completada</span>
+                            ? <span className="done-badge">{t("goals.completedBadge")}</span>
                             : <span className="prio-badge" style={{ background: prio.bg, color: prio.color }}>{prio.label}</span>
                           }
                         </div>
@@ -757,10 +763,10 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
                           <MetaRing pct={pct} color={done ? "#4CAF7D" : m.color} size={88} />
                           <div className="mc-stats">
                             {[
-                              ["Ahorrado",  fmt(m.actual)],
-                              ["Objetivo",  fmt(m.meta)],
-                              ["Restante",  fmt(Math.max(m.meta - m.actual, 0))],
-                              ["Mensual",   fmt(m.aporteMensual)],
+                              [t("goals.saved"),  fmt(m.actual, locale)],
+                              [t("goals.target"),  fmt(m.meta, locale)],
+                              [t("goals.remaining"),  fmt(Math.max(m.meta - m.actual, 0), locale)],
+                              [t("goals.monthlyBadge"),   fmt(m.aporteMensual, locale)],
                             ].map(([l, v]) => (
                               <div className="mc-stat-row" key={l}>
                                 <span className="mc-stat-lbl">{l}</span>
@@ -777,15 +783,15 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
 
                       <div className="mc-footer" onClick={e => e.stopPropagation()}>
                         <div className="mc-date">
-                          📅 {m.fechaLimite ? fmtFecha(m.fechaLimite) : "Sin fecha"}
-                          {!done && meses > 0 && <span style={{ color: meses <= 2 ? "var(--red)" : "var(--muted)" }}>· {meses}m restantes</span>}
+                          📅 {m.fechaLimite ? fmtFecha(m.fechaLimite, locale) : t("goals.noDueDate")}
+                          {!done && meses > 0 && <span style={{ color: meses <= 2 ? "var(--red)" : "var(--muted)" }}>· {t("goals.monthsLeftShort", { n: meses })}</span>}
                         </div>
                         <div className="mc-actions">
                           <button className="mc-btn" onClick={() => openEditar(m)}>✏️</button>
                           <button className="mc-btn" onClick={() => eliminarMeta(m.id)}>🗑</button>
                           {!done && (
                             <button className="mc-btn abonar" onClick={() => { setMontoAbono(""); setModalAbonar(m.id); }}>
-                              + Abonar
+                              + {t("goals.contributeShort")}
                             </button>
                           )}
                         </div>

@@ -69,12 +69,8 @@ body {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--agua-d), var(--agua));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
   flex-shrink: 0;
+  object-fit: cover;
 }
 
 .shell-brand-txt {

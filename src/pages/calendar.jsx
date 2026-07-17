@@ -5,29 +5,37 @@ import { useI18n } from "../i18n/index.jsx";
 import { apiRequest } from "../utils/apiClient";
 
 /* ─────────────────────────────────────────
-   DATA
+   DATA (demo, cuenta invitado)
 ───────────────────────────────────────── */
-const EVENTOS_INIT = [
-  { id:1,  tipo:"pago",    desc:"Alquiler",          monto:-1200, dia:1,  icono:"🏠", color:"#E07070", recurrente:true  },
-  { id:2,  tipo:"ingreso", desc:"Sueldo",             monto:+3600, dia:5,  icono:"💼", color:"#4CAF7D", recurrente:true  },
-  { id:3,  tipo:"pago",    desc:"Claro Internet",     monto:-89,   dia:5,  icono:"📡", color:"#E07070", recurrente:true  },
-  { id:4,  tipo:"meta",    desc:'Aporte "Europa"',    monto:-400,  dia:6,  icono:"✈️", color:"#7EC8C0", recurrente:true  },
-  { id:5,  tipo:"pago",    desc:"Netflix",            monto:-37.90,dia:8,  icono:"🎬", color:"#E07070", recurrente:true  },
-  { id:6,  tipo:"pago",    desc:"Spotify",            monto:-19.90,dia:10, icono:"🎵", color:"#E07070", recurrente:true  },
-  { id:7,  tipo:"ingreso", desc:"Transferencia",      monto:+250,  dia:12, icono:"💸", color:"#4CAF7D", recurrente:false },
-  { id:8,  tipo:"pago",    desc:"Seguro auto",        monto:-220,  dia:15, icono:"🚘", color:"#E07070", recurrente:true  },
-  { id:9,  tipo:"meta",    desc:'Aporte "Laptop"',    monto:-200,  dia:15, icono:"💻", color:"#C9A96E", recurrente:true  },
-  { id:10, tipo:"pago",    desc:"Luz del Sur",        monto:-89,   dia:18, icono:"⚡", color:"#E07070", recurrente:true  },
-  { id:11, tipo:"pago",    desc:"Agua Sedapal",       monto:-42,   dia:20, icono:"💧", color:"#8AADA9", recurrente:true  },
-  { id:12, tipo:"ingreso", desc:"Freelance diseño",   monto:+800,  dia:22, icono:"🎨", color:"#4CAF7D", recurrente:false },
-  { id:13, tipo:"pago",    desc:"Gimnasio",           monto:-80,   dia:25, icono:"🏋️",  color:"#E07070", recurrente:true  },
-  { id:14, tipo:"meta",    desc:'Aporte "Emergencia"',monto:-300,  dia:28, icono:"🛡️", color:"#5AADA5", recurrente:true  },
-  { id:15, tipo:"pago",    desc:"Tarjeta crédito",    monto:-450,  dia:30, icono:"💳", color:"#E07070", recurrente:true  },
+const buildEventosInit = (t) => [
+  { id:1,  tipo:"pago",    desc:t("demoEvents.rent"),          monto:-1200, dia:1,  icono:"🏠", color:"#E07070", recurrente:true  },
+  { id:2,  tipo:"ingreso", desc:t("demoEvents.salary"),        monto:+3600, dia:5,  icono:"💼", color:"#4CAF7D", recurrente:true  },
+  { id:3,  tipo:"pago",    desc:"Claro Internet",              monto:-89,   dia:5,  icono:"📡", color:"#E07070", recurrente:true  },
+  { id:4,  tipo:"meta",    desc:t("demoEvents.europeContrib"), monto:-400,  dia:6,  icono:"✈️", color:"#7EC8C0", recurrente:true  },
+  { id:5,  tipo:"pago",    desc:"Netflix",                     monto:-37.90,dia:8,  icono:"🎬", color:"#E07070", recurrente:true  },
+  { id:6,  tipo:"pago",    desc:"Spotify",                     monto:-19.90,dia:10, icono:"🎵", color:"#E07070", recurrente:true  },
+  { id:7,  tipo:"ingreso", desc:t("demoEvents.transfer"),      monto:+250,  dia:12, icono:"💸", color:"#4CAF7D", recurrente:false },
+  { id:8,  tipo:"pago",    desc:t("demoEvents.carInsurance"),  monto:-220,  dia:15, icono:"🚘", color:"#E07070", recurrente:true  },
+  { id:9,  tipo:"meta",    desc:t("demoEvents.laptopContrib"), monto:-200,  dia:15, icono:"💻", color:"#C9A96E", recurrente:true  },
+  { id:10, tipo:"pago",    desc:"Luz del Sur",                 monto:-89,   dia:18, icono:"⚡", color:"#E07070", recurrente:true  },
+  { id:11, tipo:"pago",    desc:"Agua Sedapal",                monto:-42,   dia:20, icono:"💧", color:"#8AADA9", recurrente:true  },
+  { id:12, tipo:"ingreso", desc:t("demoEvents.freelance"),     monto:+800,  dia:22, icono:"🎨", color:"#4CAF7D", recurrente:false },
+  { id:13, tipo:"pago",    desc:t("demoEvents.gym"),           monto:-80,   dia:25, icono:"🏋️",  color:"#E07070", recurrente:true  },
+  { id:14, tipo:"meta",    desc:t("demoEvents.emergencyContrib"),monto:-300,dia:28, icono:"🛡️", color:"#5AADA5", recurrente:true  },
+  { id:15, tipo:"pago",    desc:t("demoEvents.creditCard"),    monto:-450,  dia:30, icono:"💳", color:"#E07070", recurrente:true  },
 ];
 
-const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-const DIAS_SEMANA_L = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
-const DIAS_SEMANA_S = ["L","M","X","J","V","S","D"];
+const getMonthNames = (lang) => lang === "en"
+  ? ["January","February","March","April","May","June","July","August","September","October","November","December"]
+  : ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+const getWeekdayLong = (lang) => lang === "en"
+  ? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+  : ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+
+const getWeekdayShort = (lang) => lang === "en"
+  ? ["M","T","W","T","F","S","S"]
+  : ["L","M","X","J","V","S","D"];
 
 /* ─────────────────────────────────────────
    STYLES
@@ -388,7 +396,11 @@ const TODAY = new Date();
 const FORM_DEF = { desc: "", tipo: "pago", monto: "", dia: "", icono: "💳", recurrente: false };
 
 export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, user = null }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const MESES = useMemo(() => getMonthNames(lang), [lang]);
+  const DIAS_SEMANA_L = useMemo(() => getWeekdayLong(lang), [lang]);
+  const DIAS_SEMANA_S = useMemo(() => getWeekdayShort(lang), [lang]);
+  const EVENTOS_INIT = useMemo(() => buildEventosInit(t), [t]);
   const [year, setYear]   = useState(TODAY.getFullYear());
   const [month, setMonth] = useState(TODAY.getMonth());
   const [view, setView]   = useState("mes"); // mes | semana | lista
@@ -464,16 +476,16 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
   };
 
   const guardar = () => {
-    if (!form.desc.trim() || !form.monto || !form.dia) { showToast("⚠ Completa todos los campos"); return; }
+    if (!form.desc.trim() || !form.monto || !form.dia) { showToast(t("calendar.fillAllFields")); return; }
     const montoFinal = form.tipo === "ingreso" ? +form.monto : -Math.abs(+form.monto);
     const colorMap = { ingreso: "#4CAF7D", pago: "#E07070", meta: "#7EC8C0" };
     const entry = { desc: form.desc, tipo: form.tipo, monto: montoFinal, dia: +form.dia, icono: form.icono, color: colorMap[form.tipo], recurrente: form.recurrente };
     if (editId) {
       commitEventos(prev => prev.map(e => e.id === editId ? { ...e, ...entry } : e));
-      showToast("✓ Evento actualizado");
+      showToast(t("calendar.eventUpdated"));
     } else {
       commitEventos(prev => [...prev, { id: Date.now(), ...entry }]);
-      showToast("✓ Evento añadido al calendario");
+      showToast(t("calendar.eventAdded"));
     }
     setShowModal(false);
   };
@@ -494,10 +506,10 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
       recurrente: Boolean(data.recurrente),
     };
     commitEventos(prev => [...prev, entry]);
-    showToast("✓ Evento añadido al calendario");
+    showToast(t("calendar.eventAdded"));
   };
 
-  const eliminar = (id) => { commitEventos(prev => prev.filter(e => e.id !== id)); showToast("✓ Evento eliminado"); };
+  const eliminar = (id) => { commitEventos(prev => prev.filter(e => e.id !== id)); showToast(t("calendar.eventDeleted")); };
 
   // Week view data
   const weekStart = useMemo(() => {
@@ -525,8 +537,6 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
       <style>{S}</style>
       {toast && <div className="calendar-toast">{toast}</div>}
 
-      {/* Sidebar overlay */}
-
       {/* ── MODAL ── */}
       {showModal && !editId && (
         <CreateEvent
@@ -543,15 +553,15 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
           <div className="modal-sheet">
             <div className="modal-drag" />
             <div className="modal-hd">
-              <h2 className="modal-title">{editId ? "Editar evento" : "Nuevo evento"}</h2>
+              <h2 className="modal-title">{editId ? t("calendar.editEvent") : t("calendar.newEventTitle")}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
             </div>
             <div className="modal-body">
               {/* Tipo */}
               <div className="fg">
-                <label className="fl">Tipo de evento</label>
+                <label className="fl">{t("calendar.eventType")}</label>
                 <div className="tipo-grid">
-                  {[["ingreso","💰 Ingreso"],["pago","💳 Pago"],["meta","🎯 Meta"]].map(([k,l]) => (
+                  {[["ingreso",`💰 ${t("calendar.typeIncome")}`],["pago",`💳 ${t("calendar.typePayment")}`],["meta",`🎯 ${t("calendar.typeGoal")}`]].map(([k,l]) => (
                     <button key={k} className={`tipo-opt${form.tipo===k?` sel-${k}`:""}`}
                       onClick={() => setForm(p => ({ ...p, tipo: k }))}>{l}</button>
                   ))}
@@ -559,26 +569,26 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
               </div>
 
               <div className="fg">
-                <label className="fl">Descripción</label>
-                <input className="fi" placeholder="Ej: Sueldo, Netflix, Alquiler..." value={form.desc}
+                <label className="fl">{t("expenses.descriptionLabel")}</label>
+                <input className="fi" placeholder={t("calendar.descPlaceholder")} value={form.desc}
                   onChange={e => setForm(p => ({ ...p, desc: e.target.value }))} />
               </div>
 
               <div className="fg2">
                 <div className="fg" style={{marginBottom:0}}>
-                  <label className="fl">Monto (S/)</label>
+                  <label className="fl">{t("expenses.amountLabel")}</label>
                   <input className="fi" type="number" placeholder="0.00" value={form.monto}
                     onChange={e => setForm(p => ({ ...p, monto: e.target.value }))} />
                 </div>
                 <div className="fg" style={{marginBottom:0}}>
-                  <label className="fl">Día del mes</label>
+                  <label className="fl">{t("calendar.dayOfMonth")}</label>
                   <input className="fi" type="number" min="1" max="31" placeholder="1–31" value={form.dia}
                     onChange={e => setForm(p => ({ ...p, dia: e.target.value }))} />
                 </div>
               </div>
 
               <div className="fg" style={{marginTop:15}}>
-                <label className="fl">Ícono</label>
+                <label className="fl">{t("goals.iconLabel")}</label>
                 <div style={{display:"flex",flexWrap:"wrap",gap:7,marginTop:4}}>
                   {ICON_OPTIONS.map(ic => (
                     <button key={ic} onClick={() => setForm(p => ({ ...p, icono: ic }))}
@@ -591,13 +601,13 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
 
               <label className="check-row" style={{marginTop:4}}>
                 <input type="checkbox" checked={form.recurrente} onChange={e => setForm(p => ({ ...p, recurrente: e.target.checked }))} />
-                Se repite cada mes
+                {t("calendar.repeatsMonthly")}
               </label>
             </div>
             <div className="modal-foot">
               {editId && <button className="btn-cancel" style={{borderColor:"#FBDCDC",color:"var(--red)"}} onClick={() => { eliminar(editId); setShowModal(false); }}>🗑</button>}
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn-save" onClick={guardar}>{editId ? "Guardar" : "Añadir evento"} →</button>
+              <button className="btn-cancel" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
+              <button className="btn-save" onClick={guardar}>{editId ? t("common.save") : t("calendar.addEvent")} →</button>
             </div>
           </div>
         </div>
@@ -629,9 +639,9 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                 <span className="month-year">{year}</span>
               </div>
               <div className="month-nav-right">
-                <button className="today-btn" onClick={goToday}>Hoy</button>
+                <button className="today-btn" onClick={goToday}>{t("calendar.today")}</button>
                 <div className="view-toggle">
-                  {[["mes","Mes"],["semana","Semana"],["lista","Lista"]].map(([k,l]) => (
+                  {[["mes",t("calendar.viewMonth")],["semana",t("calendar.viewWeek")],["lista",t("calendar.viewList")]].map(([k,l]) => (
                     <button key={k} className={`vt-btn${view===k?" on":""}`} onClick={() => setView(k)}>{l}</button>
                   ))}
                 </div>
@@ -644,28 +654,28 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                 <span className="bal-ico">📊</span>
                 <div>
                   <div className="bal-val" style={{color:balanceMes>=0?"white":"rgba(255,255,255,.9)"}}>{balanceMes>=0?"+":""}S/ {Math.abs(balanceMes).toFixed(0)}</div>
-                  <div className="bal-lbl">Balance del mes</div>
+                  <div className="bal-lbl">{t("calendar.monthBalance")}</div>
                 </div>
               </div>
               <div className="bal-card">
                 <span className="bal-ico">💰</span>
                 <div>
                   <div className="bal-val" style={{color:"var(--green)"}}>+S/ {ingresosMes.toFixed(0)}</div>
-                  <div className="bal-lbl">Ingresos</div>
+                  <div className="bal-lbl">{t("category.income")}</div>
                 </div>
               </div>
               <div className="bal-card">
                 <span className="bal-ico">💳</span>
                 <div>
                   <div className="bal-val" style={{color:"var(--red)"}}>-S/ {Math.abs(pagosMes).toFixed(0)}</div>
-                  <div className="bal-lbl">Pagos</div>
+                  <div className="bal-lbl">{t("calendar.typePayments")}</div>
                 </div>
               </div>
               <div className="bal-card">
                 <span className="bal-ico">🎯</span>
                 <div>
                   <div className="bal-val" style={{color:"var(--agua-d)"}}>-S/ {Math.abs(metasMes).toFixed(0)}</div>
-                  <div className="bal-lbl">Aportes metas</div>
+                  <div className="bal-lbl">{t("calendar.goalContribs")}</div>
                 </div>
               </div>
             </div>
@@ -708,7 +718,7 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                                 {ev.icono} {ev.desc}
                               </div>
                             ))}
-                            {evs.length > 2 && <div className="cal-more">+{evs.length-2} más</div>}
+                            {evs.length > 2 && <div className="cal-more">{t("calendar.moreCount", { count: evs.length - 2 })}</div>}
                             {/* Mobile: dots */}
                             <div className="cal-dots-row">
                               {evs.slice(0,4).map(ev => (
@@ -744,9 +754,9 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                         );
                       })}
                       {/* Time slots */}
-                      {["Todo el día","Mañana","Tarde","Noche"].map((t, ti) => (
+                      {[t("calendar.allDay"), t("calendar.morning"), t("calendar.afternoon"), t("calendar.evening")].map((tm, ti) => (
                         <>
-                          <div key={`t${ti}`} className="week-time">{t}</div>
+                          <div key={`t${ti}`} className="week-time">{tm}</div>
                           {weekStart.map((d, di) => {
                             const evs = getEventosDay(d).filter((_, i) => {
                               if (ti === 0) return true;
@@ -780,7 +790,7 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                       return (
                         <div className="list-group" key={dia}>
                           <div className="list-group-header">
-                            <span>{isToday ? "🟢 Hoy · " : ""}{dia} de {MESES[month]}</span>
+                            <span>{isToday ? `🟢 ${t("calendar.today")} · ` : ""}{t("calendar.dayOfMonthLabel", { day: dia, month: MESES[month] })}</span>
                             <span style={{color:dayBal>=0?"var(--green)":"var(--red)",fontWeight:600}}>
                               {dayBal>=0?"+":""}S/ {dayBal.toFixed(2)}
                             </span>
@@ -792,9 +802,9 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                                 <div className="list-desc">{ev.desc}</div>
                                 <div className="list-sub" style={{display:"flex",alignItems:"center",gap:5}}>
                                   <span style={{background:ev.color+"22",color:ev.color,fontSize:10,padding:"1px 6px",borderRadius:4,fontWeight:500}}>
-                                    {ev.tipo==="ingreso"?"Ingreso":ev.tipo==="meta"?"Meta":"Pago"}
+                                    {ev.tipo==="ingreso"?t("calendar.typeIncome"):ev.tipo==="meta"?t("calendar.typeGoal"):t("calendar.typePayment")}
                                   </span>
-                                  {ev.recurrente && <span style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:"var(--muted)"}}>🔁 Recurrente</span>}
+                                  {ev.recurrente && <span style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:"var(--muted)"}}>{t("expenses.recurrentBadge")}</span>}
                                 </div>
                               </div>
                               <div className={`list-monto ${ev.monto>0?"pos":"neg"}`}>
@@ -830,9 +840,9 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                     {selectedEvs.length === 0 ? (
                       <div className="empty-day">
                         <div className="empty-day-ico">📭</div>
-                        Sin eventos este día
+                        {t("calendar.noEventsToday")}
                         <div style={{marginTop:10}}>
-                          <button className="btn-primary" style={{fontSize:12,padding:"7px 14px"}} onClick={() => openNew()}>＋ Añadir</button>
+                          <button className="btn-primary" style={{fontSize:12,padding:"7px 14px"}} onClick={() => openNew()}>＋ {t("common.add")}</button>
                         </div>
                       </div>
                     ) : selectedEvs.map(ev => (
@@ -840,7 +850,7 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                         <div className="day-ev-ico" style={{background:ev.color+"22"}}>{ev.icono}</div>
                         <div className="day-ev-info">
                           <div className="day-ev-desc">{ev.desc}</div>
-                          <div className="day-ev-sub">{ev.recurrente ? "🔁 Recurrente" : "Una vez"}</div>
+                          <div className="day-ev-sub">{ev.recurrente ? t("expenses.recurrentBadge") : t("calendar.oneTime")}</div>
                         </div>
                         <div className={`day-ev-monto`} style={{color:ev.monto>0?"var(--green)":"var(--red)"}}>
                           {ev.monto>0?"+":"-"}S/ {Math.abs(ev.monto).toFixed(2)}
@@ -851,7 +861,7 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                   {selectedEvs.length > 0 && (
                     <div style={{padding:"10px 18px",borderTop:"1px solid var(--border)"}}>
                       <button className="btn-primary" style={{width:"100%",justifyContent:"center",fontSize:12,padding:"8px"}} onClick={() => openNew()}>
-                        ＋ Añadir evento a este día
+                        ＋ {t("calendar.addEventToDay")}
                       </button>
                     </div>
                   )}
@@ -861,13 +871,13 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                 <div className="side-card" style={{animationDelay:".22s"}}>
                   <div className="side-card-hd">
                     <div>
-                      <div className="side-title">Próximos 10 días</div>
-                      <div className="side-sub">Compromisos cercanos</div>
+                      <div className="side-title">{t("calendar.next10Days")}</div>
+                      <div className="side-sub">{t("calendar.upcomingCommitments")}</div>
                     </div>
                   </div>
                   <div className="upcoming-list">
                     {upcoming.length === 0 ? (
-                      <div style={{padding:"20px",textAlign:"center",color:"var(--muted)",fontSize:13}}>Sin eventos próximos</div>
+                      <div style={{padding:"20px",textAlign:"center",color:"var(--muted)",fontSize:13}}>{t("calendar.noUpcoming")}</div>
                     ) : upcoming.map(ev => {
                       const diasRest = ev.dia - TODAY.getDate();
                       return (
@@ -875,14 +885,14 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                           <div className="up-ico" style={{background:ev.color+"22"}}>{ev.icono}</div>
                           <div className="up-info">
                             <div className="up-desc">{ev.desc}</div>
-                            <div className="up-date">Día {ev.dia} · {MESES[month].slice(0,3)}</div>
+                            <div className="up-date">{t("calendar.dayLabel", { day: ev.dia })} · {MESES[month].slice(0,3)}</div>
                           </div>
                           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
                             <div className={`up-monto ${ev.monto>0?"pos":"neg"}`}>
                               {ev.monto>0?"+":"-"}S/ {Math.abs(ev.monto).toFixed(0)}
                             </div>
                             <span className={`days-badge ${diasRest<=2?"d-urgent":diasRest<=5?"d-soon":"d-ok"}`}>
-                              {diasRest===0?"Hoy":diasRest===1?"Mañana":`en ${diasRest}d`}
+                              {diasRest===0?t("calendar.today"):diasRest===1?t("calendar.tomorrow"):t("dash.inDays", { days: diasRest })}
                             </span>
                           </div>
                         </div>
@@ -895,15 +905,15 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                 <div className="side-card" style={{animationDelay:".28s"}}>
                   <div className="side-card-hd">
                     <div>
-                      <div className="side-title">Resumen</div>
+                      <div className="side-title">{t("calendar.summary")}</div>
                       <div className="side-sub">{MESES[month]} {year}</div>
                     </div>
                   </div>
                   <div className="month-summary">
                     {[
-                      { label:"Ingresos",  val:ingresosMes,          total:ingresosMes, color:"var(--green)" },
-                      { label:"Pagos",     val:Math.abs(pagosMes),   total:ingresosMes, color:"var(--red)" },
-                      { label:"Metas",     val:Math.abs(metasMes),   total:ingresosMes, color:"var(--agua-d)" },
+                      { label:t("category.income"),  val:ingresosMes,          total:ingresosMes, color:"var(--green)" },
+                      { label:t("calendar.typePayments"),     val:Math.abs(pagosMes),   total:ingresosMes, color:"var(--red)" },
+                      { label:t("goals.title"),     val:Math.abs(metasMes),   total:ingresosMes, color:"var(--agua-d)" },
                     ].map(({ label, val, total, color }) => (
                       <div key={label}>
                         <div className="ms-row">
@@ -916,7 +926,7 @@ export default function CalendarioPage({ onNavigate, onLogout, isGuest = false, 
                       </div>
                     ))}
                     <div style={{borderTop:"1px solid var(--border)",paddingTop:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <span style={{fontSize:13,fontWeight:500,color:"var(--slate-m)"}}>Balance neto</span>
+                      <span style={{fontSize:13,fontWeight:500,color:"var(--slate-m)"}}>{t("calendar.netBalance")}</span>
                       <span style={{fontSize:15,fontWeight:600,fontFamily:"'DM Serif Display',serif",color:balanceMes>=0?"var(--green)":"var(--red)"}}>
                         {balanceMes>=0?"+":""}S/ {balanceMes.toFixed(2)}
                       </span>

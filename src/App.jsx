@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import LoginPage from './pages/login.jsx';
 import RegisterPage from './pages/register.jsx';
 import MainPage from './pages/mainpage.jsx';
@@ -8,9 +8,8 @@ import PerfilPage from './pages/profile.jsx';
 import CalendarioPage from './pages/calendar.jsx';
 import ChatbotPage from './pages/chatbot.jsx';
 import PlanesPage from './pages/planespage.jsx';
-import { fetchCurrentAccount, logoutAccount, readAuthToken, writeAuthToken } from './utils/authStorage';
+import { logoutAccount, readAuthToken, writeAuthToken } from './utils/authStorage';
 
-const PAGE_STORAGE_KEY = 'finverde-current-page';
 const VALID_PAGES = new Set([
   'login',
   'register',
@@ -25,51 +24,21 @@ const VALID_PAGES = new Set([
 ]);
 
 export default function App() {
+  // Cada vez que se abre la app se parte siempre del login: ninguna sesión
+  // guardada se reanuda automáticamente. El usuario elige explícitamente
+  // entrar con su cuenta, crear una nueva, o continuar como cuenta demo.
   const [currentPage, setCurrentPage] = useState('login');
   const [account, setAccount] = useState(null);
-  const [authReady, setAuthReady] = useState(false);
   const isDemoAccount = account?.id === 1;
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentPage]);
-
-  useEffect(() => {
-    const boot = async () => {
-      const token = readAuthToken();
-      if (!token) {
-        setAuthReady(true);
-        return;
-      }
-
-      try {
-        const response = await fetchCurrentAccount(token);
-        setAccount(response.user);
-        const savedPage = localStorage.getItem(PAGE_STORAGE_KEY);
-        setCurrentPage(savedPage && VALID_PAGES.has(savedPage) && savedPage !== 'login' && savedPage !== 'register' ? savedPage : 'mainpage');
-      } catch {
-        writeAuthToken('');
-        localStorage.removeItem(PAGE_STORAGE_KEY);
-        setAccount(null);
-        setCurrentPage('login');
-      } finally {
-        setAuthReady(true);
-      }
-    };
-
-    void boot();
-  }, []);
 
   const changePage = (page) => {
     if (!VALID_PAGES.has(page)) return;
-
     if (!account && page !== 'login' && page !== 'register') {
       setCurrentPage('login');
       return;
     }
-
-    localStorage.setItem(PAGE_STORAGE_KEY, page);
     setCurrentPage(page);
+    window.scrollTo(0, 0);
   };
 
   const goToRegister = () => changePage('register');
@@ -79,21 +48,16 @@ export default function App() {
       await logoutAccount(token).catch(() => null);
     }
     writeAuthToken('');
-    localStorage.removeItem(PAGE_STORAGE_KEY);
     setAccount(null);
     setCurrentPage('login');
   };
   const goToMainpage = (user, token) => {
     if (token) writeAuthToken(token);
     setAccount(user || null);
-    localStorage.setItem(PAGE_STORAGE_KEY, 'mainpage');
     setCurrentPage('mainpage');
+    window.scrollTo(0, 0);
   };
   const navigateToPage = (page) => changePage(page);
-
-  if (!authReady) {
-    return null;
-  }
 
   return (
     <>

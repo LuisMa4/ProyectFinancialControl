@@ -30,7 +30,8 @@ const createWindow = () => {
     show: false,
     backgroundColor: "#EDF8F7",
     autoHideMenuBar: true,
-    title: "Savia — Control Financiero",
+    title: "Savia — Personal Finance Control",
+    icon: join(__dirname, "icon.png"),
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -58,7 +59,7 @@ app.whenReady().then(async () => {
   try {
     await startApiServer();
   } catch (error) {
-    console.error("No se pudo iniciar el servidor API:", error);
+    console.error("Failed to start the API server:", error);
   }
   createWindow();
 

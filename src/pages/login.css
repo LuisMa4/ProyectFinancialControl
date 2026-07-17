@@ -471,6 +471,48 @@ body:has(.page) {
   cursor: pointer;
 }
 
+.demo-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.demo-divider::before,
+.demo-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.btn-demo {
+  width: 100%;
+  padding: 13px;
+  background: var(--white);
+  border: 1.5px solid var(--agua-deep);
+  color: var(--agua-deep);
+  border-radius: 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+}
+
+.btn-demo:hover:not(:disabled) {
+  background: var(--agua-pale);
+}
+
+.btn-demo:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
 .login-toast {
   position: fixed;
   top: max(18px, env(safe-area-inset-top));

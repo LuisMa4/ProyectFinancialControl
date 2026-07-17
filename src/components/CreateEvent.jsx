@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useI18n } from "../i18n/index.jsx";
 
 /* ─────────────────────────────────────────
    STYLES
@@ -298,51 +299,56 @@ textarea.fi{resize:none;min-height:72px;line-height:1.5}
 /* ─────────────────────────────────────────
    DATA
 ───────────────────────────────────────── */
-const DIAS_SEMANA = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
-const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const getWeekdays = (lang) => lang === "en"
+  ? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+  : ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 
-const CATS_PAGO = [
-  { id:"vivienda",  label:"Vivienda",   ico:"🏠", color:"#5AADA5" },
-  { id:"servicios", label:"Servicios",  ico:"⚡",  color:"#8AADA9" },
-  { id:"alimenta",  label:"Comida",     ico:"🍔",  color:"#7EC8C0" },
-  { id:"transporte",label:"Transporte", ico:"🚗",  color:"#A8DBD6" },
-  { id:"salud",     label:"Salud",      ico:"💊",  color:"#C9A96E" },
-  { id:"entrete",   label:"Ocio",       ico:"🎬",  color:"#D4A0C8" },
-  { id:"suscripc",  label:"Suscripción",ico:"📱",  color:"#7B9DD4" },
-  { id:"otro",      label:"Otro",       ico:"📦",  color:"#8AADA9" },
+const getMonthsShort = (lang) => lang === "en"
+  ? ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+  : ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+const buildCatsPago = (t) => [
+  { id:"vivienda",  label:t("createEvent.catHousing"),      ico:"🏠", color:"#5AADA5" },
+  { id:"servicios", label:t("createEvent.catUtilities"),    ico:"⚡",  color:"#8AADA9" },
+  { id:"alimenta",  label:t("createEvent.catFood"),         ico:"🍔",  color:"#7EC8C0" },
+  { id:"transporte",label:t("category.transport"),          ico:"🚗",  color:"#A8DBD6" },
+  { id:"salud",     label:t("category.health"),             ico:"💊",  color:"#C9A96E" },
+  { id:"entrete",   label:t("createEvent.catLeisure"),       ico:"🎬",  color:"#D4A0C8" },
+  { id:"suscripc",  label:t("createEvent.catSubscription"),  ico:"📱",  color:"#7B9DD4" },
+  { id:"otro",      label:t("category.other"),               ico:"📦",  color:"#8AADA9" },
 ];
 
-const CATS_INGRESO = [
-  { id:"sueldo",    label:"Sueldo",     ico:"💼",  color:"#4CAF7D" },
-  { id:"freelance", label:"Freelance",  ico:"🎨",  color:"#5AADA5" },
-  { id:"transf",    label:"Transferencia",ico:"💸",color:"#7EC8C0" },
-  { id:"inversion", label:"Inversión",  ico:"📈",  color:"#C9A96E" },
-  { id:"regalo",    label:"Regalo",     ico:"🎁",  color:"#D4A0C8" },
-  { id:"otro",      label:"Otro",       ico:"✨",  color:"#8AADA9" },
+const buildCatsIngreso = (t) => [
+  { id:"sueldo",    label:t("createEvent.catSalary"),      ico:"💼",  color:"#4CAF7D" },
+  { id:"freelance", label:t("createEvent.catFreelance"),   ico:"🎨",  color:"#5AADA5" },
+  { id:"transf",    label:t("createEvent.catTransfer"),    ico:"💸",color:"#7EC8C0" },
+  { id:"inversion", label:t("createEvent.catInvestment"),  ico:"📈",  color:"#C9A96E" },
+  { id:"regalo",    label:t("createEvent.catGift"),        ico:"🎁",  color:"#D4A0C8" },
+  { id:"otro",      label:t("category.other"),             ico:"✨",  color:"#8AADA9" },
 ];
 
-const CATS_ACTIVIDAD = [
-  { id:"recordatorio",label:"Recordatorio",ico:"🔔",color:"#C9A96E" },
-  { id:"reunion",     label:"Reunión",     ico:"👥",color:"#7B9DD4" },
-  { id:"revision",    label:"Revisión",    ico:"📊",color:"#5AADA5" },
-  { id:"meta",        label:"Meta",        ico:"🎯",color:"#7EC8C0" },
-  { id:"compra",      label:"Compra",      ico:"🛒",color:"#8AADA9" },
-  { id:"otro",        label:"Otro",        ico:"📌",color:"#D4A0C8" },
+const buildCatsActividad = (t) => [
+  { id:"recordatorio",label:t("createEvent.catReminder"), ico:"🔔",color:"#C9A96E" },
+  { id:"reunion",     label:t("createEvent.catMeeting"),  ico:"👥",color:"#7B9DD4" },
+  { id:"revision",    label:t("createEvent.catReview"),   ico:"📊",color:"#5AADA5" },
+  { id:"meta",        label:t("createEvent.catGoal"),     ico:"🎯",color:"#7EC8C0" },
+  { id:"compra",      label:t("createEvent.catPurchase"), ico:"🛒",color:"#8AADA9" },
+  { id:"otro",        label:t("category.other"),          ico:"📌",color:"#D4A0C8" },
 ];
 
 const ICONOS_PAGO      = ["💳","🏠","⚡","💧","📡","🚗","🎬","🎵","💊","🏋️","🛒","✈️","📱","🔒","🎓","🛡️"];
 const ICONOS_INGRESO   = ["💼","💸","🎨","📈","🎁","💰","🏦","🤝","📦","🎯"];
 const ICONOS_ACTIVIDAD = ["🔔","📊","👥","📋","🎯","📅","💡","✅","⏰","🗒️"];
 
-const REC_OPTS = ["Diario","Semanal","Mensual","Anual"];
+const buildRecOpts = (t) => [t("createEvent.freqDaily"), t("createEvent.freqWeekly"), t("createEvent.freqMonthly"), t("createEvent.freqYearly")];
 
-const TIPO_CFG = {
-  pago:      { label:"Pago",      btnLabel:"Registrar pago",     ico:"💳", accentColor:"var(--red)",   cats:CATS_PAGO,      icons:ICONOS_PAGO      },
-  ingreso:   { label:"Ingreso",   btnLabel:"Registrar ingreso",  ico:"💰", accentColor:"var(--green)", cats:CATS_INGRESO,   icons:ICONOS_INGRESO   },
-  actividad: { label:"Actividad", btnLabel:"Añadir actividad",   ico:"📋", accentColor:"var(--gold)",  cats:CATS_ACTIVIDAD, icons:ICONOS_ACTIVIDAD },
-};
+const buildTipoCfg = (t) => ({
+  pago:      { label:t("calendar.typePayment"), btnLabel:t("createEvent.btnRegisterPayment"), ico:"💳", accentColor:"var(--red)",   cats:buildCatsPago(t),      icons:ICONOS_PAGO      },
+  ingreso:   { label:t("calendar.typeIncome"),   btnLabel:t("createEvent.btnRegisterIncome"),  ico:"💰", accentColor:"var(--green)", cats:buildCatsIngreso(t),   icons:ICONOS_INGRESO   },
+  actividad: { label:t("createEvent.typeActivity"), btnLabel:t("createEvent.btnAddActivity"),  ico:"📋", accentColor:"var(--gold)",  cats:buildCatsActividad(t), icons:ICONOS_ACTIVIDAD },
+});
 
-const FORM_DEF = { desc:"", monto:"", categoria:"", icono:"", nota:"", recurrente:false, recFreq:"Mensual", alarma:false, alarmaAntes:"1 día" };
+const FORM_DEF = { desc:"", monto:"", categoria:"", icono:"", nota:"", recurrente:false, recFreq:"", alarma:false, alarmaAntes:"" };
 
 const fmtMonto = (n, tipo) => {
   if (!n) return "S/ 0.00";
@@ -354,8 +360,21 @@ const fmtMonto = (n, tipo) => {
    MODAL COMPONENT
 ───────────────────────────────────────── */
 function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
+  const { t, lang } = useI18n();
+  const DIAS_SEMANA = getWeekdays(lang);
+  const MESES_CORTO = getMonthsShort(lang);
+  const REC_OPTS = buildRecOpts(t);
+  const TIPO_CFG = buildTipoCfg(t);
+  const ALARM_OPTS = [
+    { value: "1d", label: t("createEvent.alarm1Day") },
+    { value: "2d", label: t("createEvent.alarm2Days") },
+    { value: "3d", label: t("createEvent.alarm3Days") },
+    { value: "1w", label: t("createEvent.alarm1Week") },
+    { value: "2w", label: t("createEvent.alarm2Weeks") },
+  ];
+
   const [tipo, setTipo]     = useState("pago");
-  const [form, setForm]     = useState({ ...FORM_DEF });
+  const [form, setForm]     = useState({ ...FORM_DEF, recFreq: REC_OPTS[2], alarmaAntes: ALARM_OPTS[0].value });
   const [errors, setErrors] = useState({});
   const [step, setStep]     = useState("form"); // form | success
   const inputRef            = useRef(null);
@@ -376,10 +395,10 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
 
   const validate = () => {
     const e = {};
-    if (!form.desc.trim())        e.desc  = "Ingresa una descripción";
+    if (!form.desc.trim())        e.desc  = t("createEvent.errDesc");
     if (tipo !== "actividad" && (!form.monto || isNaN(+form.monto) || +form.monto <= 0))
-                                   e.monto = "Ingresa un monto válido";
-    if (!form.categoria)           e.categoria = "Selecciona una categoría";
+                                   e.monto = t("createEvent.errAmount");
+    if (!form.categoria)           e.categoria = t("createEvent.errCategory");
     return e;
   };
 
@@ -391,7 +410,7 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
   };
 
   const handleReset = () => {
-    setForm({ ...FORM_DEF });
+    setForm({ ...FORM_DEF, recFreq: REC_OPTS[2], alarmaAntes: ALARM_OPTS[0].value });
     setErrors({});
     setStep("form");
     setTipo("pago");
@@ -412,10 +431,10 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
               {tipo === "pago" ? "✅" : tipo === "ingreso" ? "🎉" : "📌"}
             </div>
             <div className="success-title">
-              {tipo === "pago" ? "Pago registrado" : tipo === "ingreso" ? "¡Ingreso añadido!" : "Actividad guardada"}
+              {tipo === "pago" ? t("createEvent.successPayment") : tipo === "ingreso" ? t("createEvent.successIncome") : t("createEvent.successActivity")}
             </div>
             <div className="success-sub">
-              Se añadió correctamente al día <strong>{dia} de {MESES_CORTO[mes]}</strong> en tu calendario.
+              {t("createEvent.successSub", { day: dia, month: MESES_CORTO[mes] })}
             </div>
             <div className="success-detail">
               <div className="success-det-ico">{form.icono || cfg.ico}</div>
@@ -432,8 +451,8 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
                 </div>
               )}
             </div>
-            <button className="btn-done" onClick={onClose}>Ver en el calendario →</button>
-            <button className="btn-add-another" onClick={handleReset}>+ Añadir otro evento</button>
+            <button className="btn-done" onClick={onClose}>{t("createEvent.viewInCalendar")} →</button>
+            <button className="btn-add-another" onClick={handleReset}>+ {t("createEvent.addAnother")}</button>
           </div>
         </div>
       </div>
@@ -455,8 +474,8 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
                 <div className="day-bubble-mes">{MESES_CORTO[mes]}</div>
               </div>
               <div className="modal-title-wrap">
-                <div className="modal-title">Nuevo evento</div>
-                <div className="modal-sub">{diaSemana}, {dia} de {MESES_CORTO[mes]} {anio}</div>
+                <div className="modal-title">{t("calendar.newEventTitle")}</div>
+                <div className="modal-sub">{diaSemana}, {dia} {MESES_CORTO[mes]} {anio}</div>
               </div>
             </div>
             <button className="close-btn" onClick={onClose}>✕</button>
@@ -465,19 +484,19 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
           {/* TYPE TABS */}
           <div className="type-tabs">
             {[
-              { k:"pago",      ico:"💳", label:"Pago" },
-              { k:"ingreso",   ico:"💰", label:"Ingreso" },
-              { k:"actividad", ico:"📋", label:"Actividad" },
-            ].map(t => (
-              <button key={t.k}
-                className={`type-tab${tipo === t.k ? ` active-${t.k}` : ""}`}
+              { k:"pago",      ico:"💳", label:t("calendar.typePayment") },
+              { k:"ingreso",   ico:"💰", label:t("calendar.typeIncome") },
+              { k:"actividad", ico:"📋", label:t("createEvent.typeActivity") },
+            ].map(tt => (
+              <button key={tt.k}
+                className={`type-tab${tipo === tt.k ? ` active-${tt.k}` : ""}`}
                 onClick={() => {
-                  setTipo(t.k);
+                  setTipo(tt.k);
                   setForm(p => ({ ...p, categoria: "", icono: "" }));
                   setErrors({});
                 }}>
-                <div className="type-tab-ico">{t.ico}</div>
-                <span className="type-tab-label">{t.label}</span>
+                <div className="type-tab-ico">{tt.ico}</div>
+                <span className="type-tab-label">{tt.label}</span>
               </button>
             ))}
           </div>
@@ -495,7 +514,7 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
               {form.icono || (catSelObj?.ico || cfg.ico)}
             </div>
             <div className="prev-info">
-              <div className="prev-desc">{form.desc || "Descripción del evento"}</div>
+              <div className="prev-desc">{form.desc || t("createEvent.previewPlaceholder")}</div>
               <div className="prev-meta">
                 <span>{catSelObj?.label || cfg.label}</span>
                 {form.recurrente && <><span>·</span><span>🔁 {form.recFreq}</span></>}
@@ -511,11 +530,11 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
 
           {/* DESCRIPCIÓN */}
           <div className="fg">
-            <label className="fl">Descripción</label>
+            <label className="fl">{t("expenses.descriptionLabel")}</label>
             <input
               ref={inputRef}
               className={`fi${errors.desc ? " error-field" : ""}`}
-              placeholder={tipo === "pago" ? "Ej: Netflix, Alquiler, Agua…" : tipo === "ingreso" ? "Ej: Sueldo, Freelance, Venta…" : "Ej: Revisar presupuesto, Reunión…"}
+              placeholder={tipo === "pago" ? t("createEvent.descPlaceholderPago") : tipo === "ingreso" ? t("createEvent.descPlaceholderIngreso") : t("createEvent.descPlaceholderActividad")}
               value={form.desc}
               onChange={setField("desc")}
             />
@@ -525,7 +544,7 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
           {/* MONTO (solo pago/ingreso) */}
           {tipo !== "actividad" && (
             <div className="fg">
-              <label className="fl">Monto <span className="fl-hint">(S/)</span></label>
+              <label className="fl">{t("expenses.amountLabel")}</label>
               <div className="amount-wrap">
                 <span className="currency-badge">S/</span>
                 <input
@@ -543,7 +562,7 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
           {/* CATEGORÍA */}
           <div className="cat-section">
             <label className="fl">
-              Categoría
+              {t("expenses.categoryLabel")}
               {errors.categoria && <span className="field-error" style={{ display:"inline", marginLeft:8 }}>⚠ {errors.categoria}</span>}
             </label>
             <div className="cat-grid">
@@ -561,7 +580,7 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
 
           {/* ÍCONO */}
           <div className="fg">
-            <label className="fl">Ícono <span className="fl-hint">(opcional)</span></label>
+            <label className="fl">{t("goals.iconLabel")} <span className="fl-hint">({t("register.optional")})</span></label>
             <div className="icon-row">
               {icons.map(ic => (
                 <button key={ic}
@@ -580,8 +599,8 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
               <div className="toggle-left">
                 <span className="toggle-ico">🔁</span>
                 <div>
-                  <div className="toggle-label">Se repite</div>
-                  <div className="toggle-hint">Añadir a meses futuros automáticamente</div>
+                  <div className="toggle-label">{t("createEvent.repeats")}</div>
+                  <div className="toggle-hint">{t("createEvent.repeatsHint")}</div>
                 </div>
               </div>
               <label className="switch">
@@ -610,8 +629,8 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
               <div className="toggle-left">
                 <span className="toggle-ico">⏰</span>
                 <div>
-                  <div className="toggle-label">Recordatorio</div>
-                  <div className="toggle-hint">Recibir alerta antes del vencimiento</div>
+                  <div className="toggle-label">{t("createEvent.reminder")}</div>
+                  <div className="toggle-hint">{t("createEvent.reminderHint")}</div>
                 </div>
               </div>
               <label className="switch">
@@ -623,11 +642,11 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
             </div>
             {form.alarma && (
               <div style={{ padding:"10px 14px 14px" }}>
-                <label className="fl" style={{ marginBottom:6 }}>Avisar con</label>
+                <label className="fl" style={{ marginBottom:6 }}>{t("createEvent.notifyMe")}</label>
                 <select className="fi" value={form.alarmaAntes}
                   onChange={e => setForm(p => ({ ...p, alarmaAntes: e.target.value }))}>
-                  {["1 día","2 días","3 días","1 semana","2 semanas"].map(o => (
-                    <option key={o} value={o}>{o} de anticipación</option>
+                  {ALARM_OPTS.map(o => (
+                    <option key={o.value} value={o.value}>{t("createEvent.inAdvance", { time: o.label })}</option>
                   ))}
                 </select>
               </div>
@@ -636,10 +655,10 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
 
           {/* NOTA */}
           <div className="fg">
-            <label className="fl">Nota <span className="fl-hint">(opcional)</span></label>
+            <label className="fl">{t("expenses.noteLabel")} <span className="fl-hint">({t("register.optional")})</span></label>
             <textarea
               className="fi"
-              placeholder="Agrega un detalle o comentario…"
+              placeholder={t("createEvent.notePlaceholder")}
               value={form.nota}
               onChange={setField("nota")}
               rows={2}
@@ -650,7 +669,7 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
 
         {/* ── FOOTER ── */}
         <div className="modal-footer">
-          <button className="btn-cancel" onClick={onClose}>Cancelar</button>
+          <button className="btn-cancel" onClick={onClose}>{t("common.cancel")}</button>
           <button className={`btn-save ${tipo}`} onClick={handleSave}>
             {tipo === "pago" ? "💳" : tipo === "ingreso" ? "💰" : "📌"}
             {cfg.btnLabel} →
@@ -665,6 +684,10 @@ function CalEventoModal({ dia, mes, anio, onClose, onSave }) {
    DEMO WRAPPER
 ───────────────────────────────────────── */
 export default function CreateEvent(props) {
+  const { t, lang } = useI18n();
+  const DIAS_SEMANA = getWeekdays(lang);
+  const MESES_CORTO = getMonthsShort(lang);
+
   const modal = (
     <>
       <style>{S}</style>
@@ -681,7 +704,7 @@ export default function CreateEvent(props) {
   const diasDemo = [
     { dia: hoy.getDate() - 2, label: DIAS_SEMANA[(new Date(anio, mes, hoy.getDate()-2).getDay()||7)-1] },
     { dia: hoy.getDate() - 1, label: DIAS_SEMANA[(new Date(anio, mes, hoy.getDate()-1).getDay()||7)-1] },
-    { dia: hoy.getDate(),     label: "Hoy",   today: true },
+    { dia: hoy.getDate(),     label: t("calendar.today"),   today: true },
     { dia: hoy.getDate() + 1, label: DIAS_SEMANA[(new Date(anio, mes, hoy.getDate()+1).getDay()||7)-1] },
     { dia: hoy.getDate() + 2, label: DIAS_SEMANA[(new Date(anio, mes, hoy.getDate()+2).getDay()||7)-1] },
   ];
@@ -690,7 +713,7 @@ export default function CreateEvent(props) {
     <>
       <style>{S}</style>
       <div className="demo-wrap">
-        <div className="demo-title">Haz click en un día</div>
+        <div className="demo-title">{t("createEvent.clickDay")}</div>
         <div className="demo-days">
           {diasDemo.map(d => (
             <div key={d.dia} className={`demo-day${d.today ? " today" : ""}`}

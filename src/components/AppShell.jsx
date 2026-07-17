@@ -2,6 +2,7 @@ import { useState } from "react";
 import SidebarCards from "./SidebarCards";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useI18n } from "../i18n/index.jsx";
+import saviaIcon from "../assets/savia_icon_final.png";
 import "./appshell.css";
 
 const NAV_IDS = [
@@ -45,7 +46,7 @@ export default function AppShell({
 
       <aside className={`shell-sidebar${sidebarOpen ? " open" : ""}`}>
         <div className="shell-brand">
-          <div className="shell-brand-ico">💎</div>
+          <img className="shell-brand-ico" src={saviaIcon} alt="Savia" />
           <span className="shell-brand-txt">Savia</span>
         </div>
         <nav className="shell-nav">
