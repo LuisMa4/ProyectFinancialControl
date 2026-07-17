@@ -429,7 +429,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal">
             <div className="modal-hd">
-              <h2 className="modal-title">{editId ? "Editar gasto" : "Nuevo gasto"}</h2>
+              <h2 className="modal-title">{editId ? t("expenses.editModal") : t("expenses.newModal")}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
             </div>
 
@@ -478,7 +478,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
 
             <div className="modal-foot">
               <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn-save" onClick={saveGasto}>{editId ? "Guardar cambios" : "Registrar gasto"} →</button>
+              <button className="btn-save" onClick={saveGasto}>{editId ? t("expenses.saveChanges") : t("expenses.register")} →</button>
             </div>
           </div>
         </div>
@@ -508,10 +508,10 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                   <span className="sum-badge badge-white">{Math.round((totalMes / presTotal) * 100)}% del ppto.</span>
                 </div>
                 <div className="sum-val">{fmt(totalMes)}</div>
-                <div className="sum-lbl">Total gastado en {currentPeriod.month}</div>
+                <div className="sum-lbl">{t("expenses.totalIn", { month: currentPeriod.month })}</div>
                 <div className="prog-row">
                   <div className="prog-track"><div className="prog-fill" style={{ width: `${Math.min((totalMes / presTotal) * 100, 100)}%` }} /></div>
-                  <span className="prog-txt">{fmt(presTotal - totalMes)} restante</span>
+                  <span className="prog-txt">{t("expenses.remaining", { amount: fmt(presTotal - totalMes) })}</span>
                 </div>
               </div>
 
@@ -521,7 +521,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                   <span className="sum-badge badge-neu">{gastos.filter(g => g.recurrente).length} items</span>
                 </div>
                 <div className="sum-val">{fmt(recurrTotal)}</div>
-                <div className="sum-lbl">Gastos recurrentes</div>
+                <div className="sum-lbl">{t("expenses.recurring")}</div>
               </div>
 
               <div className="sum-card" style={{ animationDelay: ".12s" }}>
@@ -539,7 +539,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                   <span className="sum-badge badge-green">{gastos.length} registros</span>
                 </div>
                 <div className="sum-val">{fmt(gastos.length ? totalMes / gastos.length : 0)}</div>
-                <div className="sum-lbl">Gasto promedio por operación</div>
+                <div className="sum-lbl">{t("expenses.avgPerOp")}</div>
               </div>
             </div>
 
@@ -551,11 +551,11 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                 <div className="card" style={{ animationDelay: ".22s" }}>
                   <div className="card-hd">
                     <div>
-                      <div className="card-title">Registro de Gastos</div>
-                      <div className="card-sub">{filtered.length} transacciones encontradas</div>
+                      <div className="card-title">{t("expenses.registry")}</div>
+                      <div className="card-sub">{t("expenses.found", { count: filtered.length })}</div>
                     </div>
                     <select className="filter-sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                      <option value="fecha">Más reciente</option>
+                      <option value="fecha">{t("expenses.newest")}</option>
                       <option value="monto">Mayor monto</option>
                       <option value="desc">Alfabético</option>
                     </select>
@@ -565,16 +565,16 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                   <div className="filters">
                     <div className="search-wrap">
                       <span className="search-ico">🔍</span>
-                      <input className="search-inp" placeholder="Buscar gasto..." value={search}
+                      <input className="search-inp" placeholder={t("expenses.search")} value={search}
                         onChange={e => { setSearch(e.target.value); setPage(1); }} />
                     </div>
                     <select className="filter-sel" value={catFilter}
                       onChange={e => { setCatFilter(e.target.value); setPage(1); }}>
-                      <option value="todas">Todas las categorías</option>
+                      <option value="todas">{t("expenses.allCategories")}</option>
                       {CATEGORIAS_DEF.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
                     </select>
                     <button className={`chip${soloRec ? " on" : ""}`} onClick={() => { setSoloRec(v => !v); setPage(1); }}>
-                      🔁 Recurrentes
+                      {t("expenses.recurringFilter")}
                     </button>
                   </div>
 

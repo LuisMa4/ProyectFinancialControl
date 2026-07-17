@@ -664,7 +664,7 @@ export default function MetasPage({ onLogout, onNavigate, isGuest = false, user 
         headerRight={(
           <>
             <div className="view-toggle">
-              {[["todas","Todas"],["activas","Activas"],["completadas","✓ Listas"]].map(([k,l]) => (
+              {[["todas",t("goals.filterAll")],["activas",t("goals.filterActive")],["completadas",t("goals.filterDone")]].map(([k,l]) => (
                 <button key={k} className={`vt-btn${filtro===k?" on":""}`} onClick={() => setFiltro(k)}>{l}</button>
               ))}
             </div>

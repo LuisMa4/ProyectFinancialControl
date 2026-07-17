@@ -113,11 +113,28 @@ export default {
   "expenses.new": "+ Nuevo gasto",
   "expenses.total": "Total del mes",
   "expenses.emptyList": "No hay gastos que coincidan con los filtros.",
+  "expenses.editModal": "Editar gasto",
+  "expenses.newModal": "Nuevo gasto",
+  "expenses.saveChanges": "Guardar cambios",
+  "expenses.register": "Registrar gasto",
+  "expenses.totalIn": "Total gastado en {month}",
+  "expenses.remaining": "{amount} restante",
+  "expenses.recurring": "Gastos recurrentes",
+  "expenses.avgPerOp": "Gasto promedio por operación",
+  "expenses.registry": "Registro de Gastos",
+  "expenses.found": "{count} transacciones encontradas",
+  "expenses.newest": "Más reciente",
+  "expenses.search": "Buscar gasto...",
+  "expenses.allCategories": "Todas las categorías",
+  "expenses.recurringFilter": "🔁 Recurrentes",
 
   // Metas
   "goals.title": "Metas de Ahorro",
   "goals.subtitle": "Define objetivos y síguelos mes a mes",
   "goals.new": "+ Nueva meta",
+  "goals.filterAll": "Todas",
+  "goals.filterActive": "Activas",
+  "goals.filterDone": "✓ Listas",
 
   // Calendario
   "calendar.title": "Calendario Financiero",

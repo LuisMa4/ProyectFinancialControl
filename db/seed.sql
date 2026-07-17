@@ -2,7 +2,7 @@ INSERT INTO users (
   id, first_name, last_name, email, phone, password_hash, password_salt, plan, currency, language, timezone,
   avatar, avatar_color, monthly_budget, registered_at
 ) VALUES (
-  1, 'Juan', 'Pérez', 'juan.perez@gmail.com', '+51 999 888 777', '16bdfaad8d7a6f3adbdc0cc87cfb4f2d4f0b2b8e4e3c7cae0f8f2c7a25a40df4', '', 'premium', 'PEN', 'es', 'America/Lima',
+  1, 'Juan', 'Pérez', 'juan.perez@gmail.com', '+51 999 888 777', '42c33ef25987beebef9998c6e86819061d2e6ee2d160ea52a63ef031e6104213', '', 'premium', 'PEN', 'es', 'America/Lima',
   'JP', '#5AADA5', 2500, '12 enero 2025'
 );
 

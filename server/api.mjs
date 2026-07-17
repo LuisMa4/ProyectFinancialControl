@@ -9,10 +9,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = resolve(__dirname, "..");
 
-try {
-  process.loadEnvFile(resolve(projectRoot, ".env"));
-} catch {
-  // sin .env: el chat usará el modo local
+// .env del proyecto en desarrollo; en la app instalada también se busca
+// junto a la carpeta de datos del usuario (userData/.env)
+const envCandidates = [resolve(projectRoot, ".env")];
+if (process.env.FINVERDE_DB_DIR) {
+  envCandidates.push(resolve(process.env.FINVERDE_DB_DIR, "..", ".env"));
+}
+for (const envPath of envCandidates) {
+  try {
+    process.loadEnvFile(envPath);
+  } catch {
+    // sin .env: el chat usará el modo local
+  }
 }
 
 const dbDir = process.env.FINVERDE_DB_DIR ? resolve(process.env.FINVERDE_DB_DIR) : resolve(projectRoot, "db");
@@ -39,9 +47,11 @@ if (!paymentCardColumns.includes("holder_name")) {
   db.exec("ALTER TABLE payment_cards ADD COLUMN holder_name TEXT DEFAULT ''");
 }
 
+// Migración legacy: card_name solo existe en bases de datos antiguas
+const legacyAliasSource = paymentCardColumns.includes("card_name") ? "card_name" : "NULL";
 db.exec(`
   UPDATE payment_cards
-  SET alias = COALESCE(alias, card_name, brand || ' ' || last4),
+  SET alias = COALESCE(alias, ${legacyAliasSource}, brand || ' ' || last4),
       holder_name = COALESCE(holder_name, 'Juan Pérez')
   WHERE COALESCE(alias, '') = '' OR COALESCE(holder_name, '') = ''
 `);

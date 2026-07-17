@@ -113,11 +113,28 @@ export default {
   "expenses.new": "+ New expense",
   "expenses.total": "Month total",
   "expenses.emptyList": "No expenses match the filters.",
+  "expenses.editModal": "Edit expense",
+  "expenses.newModal": "New expense",
+  "expenses.saveChanges": "Save changes",
+  "expenses.register": "Add expense",
+  "expenses.totalIn": "Total spent in {month}",
+  "expenses.remaining": "{amount} remaining",
+  "expenses.recurring": "Recurring expenses",
+  "expenses.avgPerOp": "Average per transaction",
+  "expenses.registry": "Expense Log",
+  "expenses.found": "{count} transactions found",
+  "expenses.newest": "Most recent",
+  "expenses.search": "Search expense...",
+  "expenses.allCategories": "All categories",
+  "expenses.recurringFilter": "🔁 Recurring",
 
   // Goals
   "goals.title": "Savings Goals",
   "goals.subtitle": "Set objectives and track them monthly",
   "goals.new": "+ New goal",
+  "goals.filterAll": "All",
+  "goals.filterActive": "Active",
+  "goals.filterDone": "✓ Done",
 
   // Calendar
   "calendar.title": "Financial Calendar",
