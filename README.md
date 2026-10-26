@@ -1,7 +1,7 @@
 # Savia — Control Financiero Personal
 
 Aplicación de finanzas personales: registro de gastos, metas de ahorro, calendario
-financiero, tarjetas y un asistente IA (Fina) impulsado por Gemini. Funciona como
+financiero, tarjetas y un asistente IA (Fina) impulsado por OpenAI. Funciona como
 web app y como **aplicación de escritorio para Windows** (Electron).
 
 ## Stack
@@ -9,7 +9,7 @@ web app y como **aplicación de escritorio para Windows** (Electron).
 - **Frontend:** React 19 + Vite, CSS propio (tokens de diseño en `src/components/appshell.css`)
 - **Backend:** Node.js (`node:http` + `node:sqlite`), sin dependencias externas — `server/api.mjs`
 - **Base de datos:** SQLite (`db/financial_control.sqlite` en desarrollo; en la app
-  instalada vive en `%APPDATA%/savia-control-financiero/db/`)
+  instalada vive en `%APPDATA%/financialcontrol/db/`)
 - **Escritorio:** Electron + electron-builder (instalador NSIS)
 - **Idiomas:** Español e Inglés (`src/i18n/`), selector ES/EN en el header
 
@@ -34,15 +34,16 @@ npm run dist         # genera el instalador Windows en release/
 
 ## Asistente IA (opcional)
 
-Copia `.env.example` a `.env` y coloca tu clave de Gemini:
+Copia `.env.example` a `.env` y coloca tu clave de OpenAI (o configúrala desde el propio chat de la app):
 
 ```
-GEMINI_API_KEY=...
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4o-mini
 ```
 
 La clave se usa únicamente en el servidor local (`POST /api/chat`); si no hay clave,
 el chatbot responde en modo local básico. En la app instalada también puedes crear
-el archivo `.env` en `%APPDATA%/savia-control-financiero/`.
+el archivo `.env` en `%APPDATA%/financialcontrol/`.
 
 ## Cuenta demo
 

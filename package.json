@@ -42,6 +42,7 @@
     "appId": "com.savia.financialcontrol",
     "productName": "Savia",
     "icon": "src/assets/savia_icon_final.png",
+    "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "release"
     },
