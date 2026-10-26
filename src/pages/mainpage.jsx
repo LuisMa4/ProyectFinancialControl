@@ -6,6 +6,7 @@ import {
 import AppShell from "../components/AppShell";
 import { loadStoredCards, readStoredCards, writeStoredCards } from "../utils/cardsStorage";
 import { loadStoredExpenses, EXPENSE_CATEGORIES } from "../utils/expensesStorage";
+import { loadStoredIncomes, INCOME_CATEGORIES } from "../utils/incomesStorage";
 import { loadStoredGoals } from "../utils/goalsStorage";
 import { apiRequest } from "../utils/apiClient";
 import { useI18n } from "../i18n/index.jsx";
@@ -225,7 +226,11 @@ const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 const monthlyIncomeFromEvents = (events) =>
   events.filter((event) => event.tipo === "ingreso").reduce((total, event) => total + Math.abs(event.monto), 0);
 
-const buildRealPeriodData = (expenses, events, locale, weekLabel) => {
+// Ingresos registrados en Gastos (con fecha exacta) dentro de [startISO, endISO]
+const sumIncomesBetween = (incomes, startISO, endISO) =>
+  incomes.filter((item) => item.fecha >= startISO && item.fecha <= endISO).reduce((total, item) => total + item.monto, 0);
+
+const buildRealPeriodData = (expenses, incomes, events, locale, weekLabel) => {
   const today = new Date();
   const incomePerMonth = monthlyIncomeFromEvents(events);
 
@@ -237,7 +242,7 @@ const buildRealPeriodData = (expenses, events, locale, weekLabel) => {
     const gastos = expenses.filter((item) => item.fecha === iso).reduce((total, item) => total + item.monto, 0);
     const ingresos = events
       .filter((event) => event.tipo === "ingreso" && event.dia === date.getDate())
-      .reduce((total, event) => total + Math.abs(event.monto), 0);
+      .reduce((total, event) => total + Math.abs(event.monto), 0) + sumIncomesBetween(incomes, iso, iso);
     daily.push({ label: capitalize(date.toLocaleDateString(locale, { weekday: "short" })), gastos, ingresos });
   }
 
@@ -258,7 +263,7 @@ const buildRealPeriodData = (expenses, events, locale, weekLabel) => {
           ? event.dia >= start.getDate() && event.dia <= end.getDate()
           : event.dia >= start.getDate() || event.dia <= end.getDate()
       ))
-      .reduce((total, event) => total + Math.abs(event.monto), 0);
+      .reduce((total, event) => total + Math.abs(event.monto), 0) + sumIncomesBetween(incomes, startISO, endISO);
     weekly.push({ label: `${weekLabel} ${4 - week}`, gastos, ingresos });
   }
 
@@ -272,7 +277,9 @@ const buildRealPeriodData = (expenses, events, locale, weekLabel) => {
     monthly.push({
       label: capitalize(date.toLocaleDateString(locale, { month: "short" })),
       gastos,
-      ingresos: incomePerMonth,
+      ingresos: incomePerMonth + incomes
+        .filter((item) => String(item.fecha).slice(0, 7) === key)
+        .reduce((total, item) => total + item.monto, 0),
     });
   }
 
@@ -293,20 +300,24 @@ const buildRealCategories = (expenses, periodFilter, t) => {
     .filter((category) => category.value > 0);
 };
 
-const buildRealTransactions = (expenses, locale, t) =>
-  [...expenses]
+const buildRealTransactions = (expenses, incomes, locale, t) =>
+  [
+    ...expenses.map((item) => ({ ...item, tipo: "gasto" })),
+    ...incomes.map((item) => ({ ...item, tipo: "ingreso" })),
+  ]
     .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
     .slice(0, 7)
     .map((item) => {
-      const category = EXPENSE_CATEGORIES.find((cat) => cat.id === item.cat);
+      const isIncome = item.tipo === "ingreso";
+      const category = (isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).find((cat) => cat.id === item.cat);
       return {
-        id: item.id,
+        id: `${item.tipo}-${item.id}`,
         desc: item.desc,
-        cat: category ? t(category.nameKey) : t("category.other"),
-        icon: category?.icon || "📦",
-        monto: -item.monto,
+        cat: category ? t(category.nameKey) : t(isIncome ? "category.income" : "category.other"),
+        icon: category?.icon || (isIncome ? "💰" : "📦"),
+        monto: isIncome ? item.monto : -item.monto,
         fecha: new Date(`${item.fecha}T12:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short" }),
-        tipo: "gasto",
+        tipo: item.tipo,
       };
     });
 
@@ -359,6 +370,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
   const [cardErrors, setCardErrors] = useState({});
   const [pendingCard, setPendingCard] = useState(null);
   const [expenses, setExpenses] = useState([]);
+  const [incomes, setIncomes] = useState([]);
   const [goals, setGoals] = useState([]);
   const [events, setEvents] = useState([]);
 
@@ -366,6 +378,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
     if (isGuest) return;
     let alive = true;
     void loadStoredExpenses([]).then((data) => alive && setExpenses(Array.isArray(data) ? data : []));
+    void loadStoredIncomes([]).then((data) => alive && setIncomes(Array.isArray(data) ? data : []));
     void loadStoredGoals([]).then((data) => alive && setGoals(Array.isArray(data) ? data : []));
     void apiRequest("/events").then((data) => alive && setEvents(Array.isArray(data) ? data : [])).catch(() => null);
     return () => { alive = false; };
@@ -375,7 +388,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
   const activePeriod = PERIOD_DATA[periodo];
   const periodLabel = t(periodo === "Días" ? "period.last7" : periodo === "Mes" ? "period.last4w" : "period.last6m");
   const periodCompareLabel = t(periodo === "Días" ? "period.dailyCompare" : periodo === "Mes" ? "period.weeklyCompare" : "period.monthlyCompare");
-  const realPeriods = buildRealPeriodData(expenses, events, locale, t("period.weekAbbrev"));
+  const realPeriods = buildRealPeriodData(expenses, incomes, events, locale, t("period.weekAbbrev"));
   const realPeriodData = periodo === "Días" ? realPeriods.daily : periodo === "Mes" ? realPeriods.weekly : realPeriods.monthly;
   const periodData = isGuest ? activePeriod.data : realPeriodData;
   const ingresosMes = sumPeriod(periodData, "ingresos");
@@ -393,7 +406,7 @@ export default function Dashboard({ onLogout, onNavigate, isGuest = false, user 
   const categorias = isGuest
     ? scaleCategories(buildCategorias(t), totalGastos)
     : buildRealCategories(expenses, (item) => item.fecha >= periodStartISO, t);
-  const transacciones = isGuest ? buildTransacciones(t) : buildRealTransactions(expenses, locale, t);
+  const transacciones = isGuest ? buildTransacciones(t) : buildRealTransactions(expenses, incomes, locale, t);
   const metas = isGuest
     ? buildMetas(t)
     : goals.map((goal) => ({ id: goal.id, name: goal.nombre, icon: goal.icon, meta: goal.meta, actual: goal.actual, color: goal.color, fechaCreacion: goal.fechaCreacion || null }));

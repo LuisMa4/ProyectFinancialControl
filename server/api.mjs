@@ -89,6 +89,18 @@ if (userCount === 0) {
   db.exec(seedSql);
 }
 
+// Categorías de ingresos (transactions.category_id referencia expense_categories);
+// se insertan siempre porque el seed solo corre en bases de datos vacías
+db.exec(`
+  INSERT OR IGNORE INTO expense_categories (id, name, icon, color, default_budget, sort_order) VALUES
+    ('sueldo', 'Sueldo', '💼', '#4CAF7D', 0, 101),
+    ('freelance', 'Freelance', '🎨', '#3A9D6A', 0, 102),
+    ('ventas', 'Ventas', '🛍️', '#6BBF8E', 0, 103),
+    ('inversiones', 'Inversiones', '📈', '#2E8B57', 0, 104),
+    ('regalos', 'Regalos', '🎁', '#8FD1A8', 0, 105),
+    ('otros_ingresos', 'Otros ingresos', '💰', '#A8DBB9', 0, 106)
+`);
+
 const cardCount = db.prepare("SELECT COUNT(*) AS total FROM payment_cards").get().total;
 if (cardCount === 0) {
   db.exec(seedSql);
@@ -192,6 +204,13 @@ const toExpenseRecord = (expense) => ({
   color: expense.color || "",
 });
 
+const toIncomeRecord = (income) => ({
+  ...toExpenseRecord(income),
+  category_id: income.cat || income.category_id || "otros_ingresos",
+  type: "income",
+  title: income.desc || income.title || "Ingreso",
+});
+
 const getUser = () => db.prepare("SELECT * FROM users ORDER BY id LIMIT 1").get();
 
 const normalizeUserRow = (row) => {
@@ -259,6 +278,7 @@ const completeAuth = (res, user, token) => json(res, 200, { token, user: normali
 
 const getCards = (userId) => db.prepare("SELECT * FROM payment_cards WHERE user_id = ? ORDER BY is_primary DESC, id DESC").all(userId).map(normalizeCardRow);
 const getExpenses = (userId) => db.prepare("SELECT * FROM transactions WHERE user_id = ? AND type = 'expense' ORDER BY transaction_date DESC, id DESC").all(userId).map(normalizeExpenseRow);
+const getIncomes = (userId) => db.prepare("SELECT * FROM transactions WHERE user_id = ? AND type = 'income' ORDER BY transaction_date DESC, id DESC").all(userId).map(normalizeExpenseRow);
 const getGoals = (userId) => {
   const goals = db.prepare("SELECT * FROM savings_goals WHERE user_id = ? ORDER BY id ASC").all(userId);
   const contributions = db.prepare("SELECT goal_id, transaction_date, amount FROM transactions WHERE user_id = ? AND type = 'goal_contribution' ORDER BY transaction_date ASC, id ASC").all(userId);
@@ -430,6 +450,24 @@ const replaceExpenses = (userId, expenses) => {
 
   applyItems(Array.isArray(expenses) ? expenses : []);
   return getExpenses(userId);
+};
+
+const replaceIncomes = (userId, incomes) => {
+  const insert = db.prepare(`
+    INSERT INTO transactions (
+      user_id, category_id, goal_id, card_id, type, title, amount, transaction_date, note, is_recurring, icon, color
+    ) VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  runInTransaction(() => {
+    db.prepare("DELETE FROM transactions WHERE user_id = ? AND type = 'income'").run(userId);
+    for (const income of Array.isArray(incomes) ? incomes : []) {
+      const record = toIncomeRecord(income);
+      insert.run(userId, record.category_id, record.type, record.title, record.amount, record.transaction_date, record.note, record.is_recurring, record.icon, record.color);
+    }
+  });
+
+  return getIncomes(userId);
 };
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -742,6 +780,13 @@ const handleRequest = async (req, res) => {
     if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
     if (req.method === "GET") return json(res, 200, getExpenses(currentUser.id));
     if (req.method === "PUT") return json(res, 200, replaceExpenses(currentUser.id, (await readBody(req))?.expenses || []));
+  }
+
+  if (url.pathname === "/api/incomes") {
+    const currentUser = getCurrentUserFromRequest(req);
+    if (!currentUser) return json(res, 401, { error: errMsg("notAuthenticated", getRequestLanguage(req)) });
+    if (req.method === "GET") return json(res, 200, getIncomes(currentUser.id));
+    if (req.method === "PUT") return json(res, 200, replaceIncomes(currentUser.id, (await readBody(req))?.incomes || []));
   }
 
   if (url.pathname === "/api/goals" && req.method === "GET") {

@@ -12,6 +12,13 @@ import {
   getInitialExpenses,
   writeStoredExpenses,
 } from "../utils/expensesStorage";
+import {
+  INCOMES_CHANGED_EVENT,
+  INCOME_CATEGORIES,
+  loadStoredIncomes,
+  getInitialIncomes,
+  writeStoredIncomes,
+} from "../utils/incomesStorage";
 
 const buildGastosInit = (t) => [
   { id:1,  desc:t("demoExpenses.item1desc"),  cat:"alimentacion", monto:185.50, fecha:"2025-05-24", nota:t("demoExpenses.item1note"), recurrente:false },
@@ -156,6 +163,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 .rec-badge{font-size:10px;background:var(--mint);color:var(--agua-d);padding:2px 7px;border-radius:100px;font-weight:500}
 
 .amount-cell{font-weight:600;font-size:14px;color:var(--red);white-space:nowrap}
+.amount-cell.ingreso{color:var(--green)}
+.btn-income{display:flex;align-items:center;gap:7px;padding:10px 18px;background:linear-gradient(135deg,#3A9D6A,var(--green));color:white;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;box-shadow:0 3px 14px rgba(76,175,125,.3);transition:all .18s}
+.btn-income:hover{transform:translateY(-1px);box-shadow:0 5px 20px rgba(76,175,125,.4)}
+.type-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.type-opt{padding:10px;border:1.5px solid var(--border);border-radius:10px;background:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s}
+.type-opt.sel-gasto{border-color:var(--red);background:#FEF0F0;color:var(--red)}
+.type-opt.sel-ingreso{border-color:var(--green);background:#E8F7F0;color:var(--green)}
+.cat-opt.sel.ingreso{border-color:var(--green);background:rgba(76,175,125,.08)}
+.cat-opt.sel.ingreso .cat-opt-lbl{color:var(--green)}
+.btn-save.ingreso{background:linear-gradient(135deg,#3A9D6A,var(--green));box-shadow:0 3px 14px rgba(76,175,125,.3)}
 .actions-cell{display:flex;gap:6px;justify-content:flex-end}
 .act-btn{background:none;border:none;cursor:pointer;font-size:14px;padding:5px;border-radius:7px;transition:background .15s;color:var(--muted)}
 .act-btn:hover{background:var(--mint);color:var(--agua-d)}
@@ -245,7 +262,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--mint);color:var(--slate)}
 }
 @media(max-width:560px){
   .header{height:auto;min-height:var(--header-h);align-items:flex-start;flex-direction:column;gap:12px;padding:14px 16px}
-  .hd-right{width:100%;justify-content:space-between}
+  .hd-right{width:100%;justify-content:space-between;flex-wrap:wrap}
   .summary-strip{grid-template-columns:1fr}
   .card{padding:18px}
   .filters{align-items:stretch;flex-direction:column}
@@ -288,6 +305,9 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
   const CATEGORIAS_DEF = useMemo(() => EXPENSE_CATEGORIES.map((c) => ({ ...c, name: t(c.nameKey) })), [t]);
   const GASTOS_INIT = useMemo(() => buildGastosInit(t), [t]);
   const [gastos, setGastos]         = useState(() => isGuest ? GASTOS_INIT : getInitialExpenses([]));
+  const INCOME_CATS = useMemo(() => INCOME_CATEGORIES.map((c) => ({ ...c, name: t(c.nameKey) })), [t]);
+  const [ingresos, setIngresos]     = useState(() => isGuest ? [] : getInitialIncomes([]));
+  const [tipoFilter, setTipoFilter] = useState("todos");
   const [search, setSearch]         = useState("");
   const [catFilter, setCatFilter]   = useState("todas");
   const [soloRec, setSoloRec]       = useState(false);
@@ -303,8 +323,10 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
   };
 
   // Form state
-  const [form, setForm] = useState({ desc: "", monto: "", cat: "alimentacion", fecha: todayLocalISO(), nota: "", recurrente: false });
+  const emptyForm = (tipo = "gasto") => ({ tipo, desc: "", monto: "", cat: tipo === "ingreso" ? "sueldo" : "alimentacion", fecha: todayLocalISO(), nota: "", recurrente: false });
+  const [form, setForm] = useState(() => emptyForm());
   const [editId, setEditId] = useState(null);
+  const isIncomeForm = form.tipo === "ingreso";
 
   const showToast = (msg, err = false) => {
     setToast({ msg, err });
@@ -316,6 +338,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
     // inicializado arriba), nunca las filas sembradas en español en la BD.
     if (isGuest) return;
     void loadStoredExpenses([]).then(setGastos);
+    void loadStoredIncomes([]).then(setIngresos);
   }, [isGuest]);
 
   const commitGastos = (updater) => {
@@ -325,6 +348,22 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
       return next;
     });
   };
+
+  // Los ingresos de la cuenta demo solo viven en memoria
+  const commitIngresos = (updater) => {
+    setIngresos(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (!isGuest) void writeStoredIncomes(next);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (isGuest) return undefined;
+    const syncIncomes = (event) => setIngresos(event.detail || getInitialIncomes([]));
+    window.addEventListener(INCOMES_CHANGED_EVENT, syncIncomes);
+    return () => window.removeEventListener(INCOMES_CHANGED_EVENT, syncIncomes);
+  }, [isGuest]);
 
   useEffect(() => {
     const syncExpenses = (event) => {
@@ -338,7 +377,10 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
 
   // Derived
   const filtered = useMemo(() => {
-    let list = [...gastos];
+    let list = [
+      ...(tipoFilter === "ingreso" ? [] : gastos.map(g => ({ ...g, tipo: "gasto" }))),
+      ...(tipoFilter === "gasto" ? [] : ingresos.map(i => ({ ...i, tipo: "ingreso" }))),
+    ];
     if (search) list = list.filter(g => g.desc.toLowerCase().includes(search.toLowerCase()) || (g.nota && g.nota.toLowerCase().includes(search.toLowerCase())));
     if (catFilter !== "todas") list = list.filter(g => g.cat === catFilter);
     if (soloRec) list = list.filter(g => g.recurrente);
@@ -349,7 +391,7 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
       return 0;
     });
     return list;
-  }, [gastos, search, catFilter, soloRec, sortBy]);
+  }, [gastos, ingresos, tipoFilter, search, catFilter, soloRec, sortBy]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -358,6 +400,8 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
   const presTotal  = CATEGORIAS_DEF.reduce((a, c) => a + c.presupuesto, 0);
   const recurrTotal= gastos.filter(g => g.recurrente).reduce((a, g) => a + g.monto, 0);
   const mayorGasto = [...gastos].sort((a, b) => b.monto - a.monto)[0];
+  const totalIngresos = ingresos.reduce((a, i) => a + i.monto, 0);
+  const balance = totalIngresos - totalMes;
   const trendData = useMemo(() => {
     if (!gastos.length) return [];
 
@@ -378,14 +422,14 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
     gastado: gastos.filter(g => g.cat === c.id).reduce((a, g) => a + g.monto, 0),
   })).sort((a, b) => b.gastado - a.gastado), [gastos, CATEGORIAS_DEF]);
 
-  const openNew = () => {
-    setForm({ desc: "", monto: "", cat: "alimentacion", fecha: todayLocalISO(), nota: "", recurrente: false });
+  const openNew = (tipo = "gasto") => {
+    setForm(emptyForm(tipo));
     setEditId(null);
     setShowModal(true);
   };
 
   const openEdit = (g) => {
-    setForm({ desc: g.desc, monto: String(g.monto), cat: g.cat, fecha: g.fecha, nota: g.nota, recurrente: g.recurrente });
+    setForm({ tipo: g.tipo, desc: g.desc, monto: String(g.monto), cat: g.cat, fecha: g.fecha, nota: g.nota, recurrente: g.recurrente });
     setEditId(g.id);
     setShowModal(true);
   };
@@ -394,24 +438,33 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
     if (!form.desc.trim() || !form.monto || isNaN(Number(form.monto))) {
       showToast(t("expenses.validationError"), true); return;
     }
-    const entry = { ...form, monto: Number(form.monto) };
+    const { tipo, ...entry } = { ...form, monto: Math.abs(Number(form.monto)) };
+    const commit = tipo === "ingreso" ? commitIngresos : commitGastos;
     if (editId) {
-      commitGastos(prev => prev.map(g => g.id === editId ? { ...g, ...entry } : g));
-      showToast(t("expenses.updated"));
+      commit(prev => prev.map(g => g.id === editId ? { ...g, ...entry } : g));
+      showToast(t(tipo === "ingreso" ? "expenses.incomeUpdated" : "expenses.updated"));
     } else {
-      commitGastos(prev => [{ id: Date.now(), ...entry }, ...prev]);
-      showToast(t("expenses.created"));
+      commit(prev => [{ id: Date.now(), ...entry }, ...prev]);
+      showToast(t(tipo === "ingreso" ? "expenses.incomeCreated" : "expenses.created"));
     }
     setShowModal(false);
     setPage(1);
   };
 
-  const deleteGasto = (id) => {
-    commitGastos(prev => prev.filter(g => g.id !== id));
-    showToast(t("expenses.deleted"));
+  const deleteGasto = (g) => {
+    if (g.tipo === "ingreso") {
+      commitIngresos(prev => prev.filter(i => i.id !== g.id));
+      showToast(t("expenses.incomeDeleted"));
+    } else {
+      commitGastos(prev => prev.filter(x => x.id !== g.id));
+      showToast(t("expenses.deleted"));
+    }
   };
 
-  const getCat = (id) => CATEGORIAS_DEF.find(c => c.id === id) || CATEGORIAS_DEF[7];
+  const getCat = (id, tipo = "gasto") => tipo === "ingreso"
+    ? INCOME_CATS.find(c => c.id === id) || INCOME_CATS[INCOME_CATS.length - 1]
+    : CATEGORIAS_DEF.find(c => c.id === id) || CATEGORIAS_DEF[7];
+  const formCats = isIncomeForm ? INCOME_CATS : CATEGORIAS_DEF;
 
   return (
     <>
@@ -422,13 +475,28 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal">
             <div className="modal-hd">
-              <h2 className="modal-title">{editId ? t("expenses.editModal") : t("expenses.newModal")}</h2>
+              <h2 className="modal-title">
+                {isIncomeForm
+                  ? (editId ? t("expenses.editIncomeModal") : t("expenses.newIncomeModal"))
+                  : (editId ? t("expenses.editModal") : t("expenses.newModal"))}
+              </h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
             </div>
 
+            {!editId && (
+              <div className="type-toggle">
+                {[["gasto", `💸 ${t("expenses.typeExpense")}`], ["ingreso", `💰 ${t("expenses.typeIncome")}`]].map(([k, label]) => (
+                  <button key={k} className={`type-opt${form.tipo === k ? ` sel-${k}` : ""}`}
+                    onClick={() => form.tipo !== k && setForm(p => ({ ...emptyForm(k), desc: p.desc, monto: p.monto, fecha: p.fecha, nota: p.nota }))}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="form-group">
               <label className="form-label">{t("expenses.descriptionLabel")}</label>
-              <input className="form-input" placeholder={t("expenses.descPlaceholder")} value={form.desc}
+              <input className="form-input" placeholder={t(isIncomeForm ? "expenses.incomeDescPlaceholder" : "expenses.descPlaceholder")} value={form.desc}
                 onChange={e => setForm(p => ({ ...p, desc: e.target.value }))} />
             </div>
 
@@ -448,8 +516,8 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
             <div className="form-group">
               <label className="form-label">{t("expenses.categoryLabel")}</label>
               <div className="cat-select-grid">
-                {CATEGORIAS_DEF.map(c => (
-                  <button key={c.id} className={`cat-opt${form.cat === c.id ? " sel" : ""}`}
+                {formCats.map(c => (
+                  <button key={c.id} className={`cat-opt${form.cat === c.id ? ` sel${isIncomeForm ? " ingreso" : ""}` : ""}`}
                     onClick={() => setForm(p => ({ ...p, cat: c.id }))}>
                     <span className="cat-opt-ico">{c.icon}</span>
                     <span className="cat-opt-lbl">{c.name.split(" ")[0]}</span>
@@ -466,12 +534,14 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
 
             <label className="check-row" style={{ marginBottom: 0 }}>
               <input type="checkbox" checked={form.recurrente} onChange={e => setForm(p => ({ ...p, recurrente: e.target.checked }))} />
-              {t("expenses.recurringCheckbox")}
+              {t(isIncomeForm ? "expenses.incomeRecurringCheckbox" : "expenses.recurringCheckbox")}
             </label>
 
             <div className="modal-foot">
               <button className="btn-cancel" onClick={() => setShowModal(false)}>{t("common.cancel")}</button>
-              <button className="btn-save" onClick={saveGasto}>{editId ? t("expenses.saveChanges") : t("expenses.register")} →</button>
+              <button className={`btn-save${isIncomeForm ? " ingreso" : ""}`} onClick={saveGasto}>
+                {editId ? t("expenses.saveChanges") : t(isIncomeForm ? "expenses.registerIncome" : "expenses.register")} →
+              </button>
             </div>
           </div>
         </div>
@@ -486,9 +556,14 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
         eyebrow={`${t("expenses.subtitle")} · ${currentPeriod.label}`}
         title={t("expenses.title")}
         headerRight={(
-          <button className="btn-primary" onClick={openNew}>
-            <span style={{ fontSize: 16 }}>+</span> {t("expenses.new").replace("+ ", "")}
-          </button>
+          <div className="hd-right">
+            <button className="btn-income" onClick={() => openNew("ingreso")}>
+              <span style={{ fontSize: 16 }}>+</span> {t("expenses.newIncome").replace("+ ", "")}
+            </button>
+            <button className="btn-primary" onClick={() => openNew("gasto")}>
+              <span style={{ fontSize: 16 }}>+</span> {t("expenses.new").replace("+ ", "")}
+            </button>
+          </div>
         )}
       >
           <div className="content">
@@ -528,11 +603,13 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
 
               <div className="sum-card" style={{ animationDelay: ".17s" }}>
                 <div className="sum-top">
-                  <span className="sum-icon">📊</span>
-                  <span className="sum-badge badge-green">{gastos.length}</span>
+                  <span className="sum-icon">💰</span>
+                  <span className={`sum-badge ${balance >= 0 ? "badge-green" : "badge-red"}`}>
+                    {t("expenses.balance", { amount: `${balance < 0 ? "-" : ""}${fmt(Math.abs(balance))}` })}
+                  </span>
                 </div>
-                <div className="sum-val">{fmt(gastos.length ? totalMes / gastos.length : 0)}</div>
-                <div className="sum-lbl">{t("expenses.avgPerOp")}</div>
+                <div className="sum-val" style={{ color: "var(--green)" }}>{fmt(totalIngresos)}</div>
+                <div className="sum-lbl">{t("expenses.totalIncome")}</div>
               </div>
             </div>
 
@@ -561,10 +638,25 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                       <input className="search-inp" placeholder={t("expenses.search")} value={search}
                         onChange={e => { setSearch(e.target.value); setPage(1); }} />
                     </div>
+                    <select className="filter-sel" value={tipoFilter}
+                      onChange={e => { setTipoFilter(e.target.value); setCatFilter("todas"); setPage(1); }}>
+                      <option value="todos">{t("expenses.allTypes")}</option>
+                      <option value="gasto">{t("expenses.onlyExpenses")}</option>
+                      <option value="ingreso">{t("expenses.onlyIncomes")}</option>
+                    </select>
                     <select className="filter-sel" value={catFilter}
                       onChange={e => { setCatFilter(e.target.value); setPage(1); }}>
                       <option value="todas">{t("expenses.allCategories")}</option>
-                      {CATEGORIAS_DEF.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                      {tipoFilter !== "ingreso" && (
+                        <optgroup label={t("expenses.typeExpense")}>
+                          {CATEGORIAS_DEF.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                        </optgroup>
+                      )}
+                      {tipoFilter !== "gasto" && (
+                        <optgroup label={t("expenses.typeIncome")}>
+                          {INCOME_CATS.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                        </optgroup>
+                      )}
                     </select>
                     <button className={`chip${soloRec ? " on" : ""}`} onClick={() => { setSoloRec(v => !v); setPage(1); }}>
                       {t("expenses.recurringFilter")}
@@ -590,9 +682,9 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                       </thead>
                       <tbody>
                         {paginated.map(g => {
-                          const cat = getCat(g.cat);
+                          const cat = getCat(g.cat, g.tipo);
                           return (
-                            <tr key={g.id} onClick={() => openEdit(g)}>
+                            <tr key={`${g.tipo}-${g.id}`} onClick={() => openEdit(g)}>
                               <td>
                                 <div className="tx-main">
                                   <div className="tx-emo">{cat.icon}</div>
@@ -611,11 +703,11 @@ export default function GastosPage({ onLogout, onNavigate, isGuest = false, user
                                 </span>
                               </td>
                               <td style={{ color: "var(--muted)", fontSize: 12, whiteSpace: "nowrap" }}>{fmtDate(g.fecha, locale)}</td>
-                              <td><span className="amount-cell">{fmt(g.monto)}</span></td>
+                              <td><span className={`amount-cell${g.tipo === "ingreso" ? " ingreso" : ""}`}>{g.tipo === "ingreso" ? "+ " : "- "}{fmt(g.monto)}</span></td>
                               <td onClick={e => e.stopPropagation()}>
                                 <div className="actions-cell">
                                   <button className="act-btn" title={t("common.edit")} onClick={() => openEdit(g)}>✏️</button>
-                                  <button className="act-btn del" title={t("common.delete")} onClick={() => deleteGasto(g.id)}>🗑</button>
+                                  <button className="act-btn del" title={t("common.delete")} onClick={() => deleteGasto(g)}>🗑</button>
                                 </div>
                               </td>
                             </tr>
